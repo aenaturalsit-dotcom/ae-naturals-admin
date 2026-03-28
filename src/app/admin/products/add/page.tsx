@@ -1,97 +1,316 @@
-// src/app/admin/products/add/page.tsx
+// src\app\admin\products\add\page.tsx
 "use client";
-import { useForm, useFieldArray } from "react-hook-form";
-import { useState } from "react";
 
-interface APlusBlock {
-  type: 'banner' | 'split';
-  imageUrl: string;
-  title?: string;
-  text?: string;
-  align?: 'left' | 'right';
-}
+import React, { useState } from "react";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { 
+  Save, ArrowLeft, Loader2, Upload, X, Plus, Trash2, Layers, ShieldAlert 
+} from "lucide-react";
+import { CldUploadWidget } from "next-cloudinary";
 
-interface ProductFormData {
-  name: string;
-  price: number;
-  extra: {
-    safetyInfo?: string;
-    ingredients?: string;
-    manufacturer?: string;
-    countryOfOrigin?: string;
-    aPlusContent: APlusBlock[];
-  };
-}
+import apiClient from "@/lib/api-client";
+import { adminProductService } from "@/services/admin-products.service";
+import APlusContentBuilder from "@/components/admin/APlusContentBuilder";
 
 export default function AddProductPage() {
-  const { register, control, handleSubmit } = useForm<ProductFormData>({
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [images, setImages] = useState<string[]>([]);
+
+  // --- DYNAMIC DATA FETCHING ---
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin-categories"],
+    queryFn: async () => {
+      const data = await apiClient.get("/admin/categories");
+      return data || [];
+    },
+  });
+
+  const { data: stores = [] } = useQuery({
+    queryKey: ["admin-stores"],
+    queryFn: async () => {
+      const data = await apiClient.get("/admin/stores");
+      return data || [];
+    },
+  });
+
+  // --- FORM SETUP ---
+  const methods = useForm({
     defaultValues: {
-      name: "", price: 0, 
-      extra: { aPlusContent: [] }
+      name: "",
+      description: "",
+      price: "",
+      oldPrice: "",
+      categoryId: "",
+      storeId: "",
+      ingredients: "",
+      isActive: true,
+      careInstructions: [{ value: "" }],
+      deliveryInfo: [{ value: "" }],
+      attributes: [{ name: "", value: "" }],
+      variants: [{ name: "", priceModifier: 0, stock: 10 }],
+      extra: {
+        manufacturer: "",
+        countryOfOrigin: "",
+        safetyInfo: "",
+        directions: "",
+        legalDisclaimer: "",
+        aPlusContent: [] as any[]
+      }
     }
   });
 
-  const { fields: aPlusBlocks, append, remove } = useFieldArray({
-    control,
-    name: "extra.aPlusContent"
+  const { register, control, handleSubmit, watch } = methods;
+
+  // Dynamic Field Arrays
+  const { fields: careFields, append: appendCare, remove: removeCare } = useFieldArray({ control, name: "careInstructions" as any });
+  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery } = useFieldArray({ control, name: "deliveryInfo" as any });
+  const { fields: attrFields, append: appendAttr, remove: removeAttr } = useFieldArray({ control, name: "attributes" as any });
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: "variants" as any });
+
+  // --- MUTATION ---
+  const mutation = useMutation({
+    mutationFn: async (formData: any) => {
+      if (images.length === 0) throw new Error("At least one image is required");
+
+      const payload = {
+        ...formData,
+        price: parseFloat(formData.price),
+        oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+        images: images,
+        careInstructions: formData.careInstructions.map((i: any) => i.value).filter(Boolean),
+        deliveryInfo: formData.deliveryInfo.map((i: any) => i.value).filter(Boolean),
+        attributes: formData.attributes.filter((a: any) => a.name && a.value),
+        variants: formData.variants.filter((v: any) => v.name).map((v: any) => ({
+          ...v,
+          priceModifier: parseFloat(v.priceModifier || 0),
+          stock: parseInt(v.stock || 0)
+        })),
+        slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      };
+
+      return adminProductService.createProduct(payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      alert("✅ Product published successfully!");
+      router.push("/admin/products");
+    },
+    onError: (error: any) => {
+      alert(`❌ Error creating product: ${error.message}`);
+    }
   });
 
-  const onSubmit = async (data: any) => {
-    // Call your API
-    await fetch('/api/products', { method: 'POST', body: JSON.stringify(data) });
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto p-6 space-y-8">
-      <div className="flex justify-between items-center sticky top-0 bg-white z-10 py-4 border-b">
-        <h1 className="text-2xl font-bold">Add New Product</h1>
-        <button type="submit" className="bg-black text-white px-6 py-2 rounded-md">Save Product</button>
-      </div>
-
-      {/* Basic Info */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border">
-        <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-        {/* standard inputs: name, price, images */}
-      </section>
-
-      {/* Important Info & Details */}
-      <section className="grid grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-4">Important Information</h2>
-          <textarea {...register("extra.safetyInfo")} placeholder="Safety Info..." className="w-full border p-2 mb-2 rounded" />
-          <textarea {...register("extra.ingredients")} placeholder="Ingredients..." className="w-full border p-2 mb-2 rounded" />
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-4">Technical Details</h2>
-          <input {...register("extra.manufacturer")} placeholder="Manufacturer" className="w-full border p-2 mb-2 rounded" />
-          <input {...register("extra.countryOfOrigin")} placeholder="Country of Origin" className="w-full border p-2 mb-2 rounded" />
-        </div>
-      </section>
-
-      {/* A+ Content Builder (🔥 ADVANCED) */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">A+ Content Blocks</h2>
-          <div className="space-x-2">
-            <button type="button" onClick={() => append({ type: 'banner', imageUrl: '', title: '' })} className="text-sm bg-gray-100 px-3 py-1 rounded">+ Banner</button>
-            <button type="button" onClick={() => append({ type: 'split', imageUrl: '', text: '', align: 'left' })} className="text-sm bg-gray-100 px-3 py-1 rounded">+ Image/Text</button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {aPlusBlocks.map((block, index) => (
-            <div key={block.id} className="p-4 border rounded-md relative bg-gray-50">
-              <button type="button" onClick={() => remove(index)} className="absolute top-2 right-2 text-red-500">Remove</button>
-              
-              <span className="text-xs font-bold uppercase text-gray-500">{block.type} Block</span>
-              
-              {/* Render dynamic inputs based on block type */}
-              <input {...register(`extra.aPlusContent.${index}.imageUrl`)} placeholder="Image URL" className="w-full mt-2 border p-2 rounded" />
-              <input {...register(`extra.aPlusContent.${index}.title`)} placeholder="Heading" className="w-full mt-2 border p-2 rounded" />
+    <div className="min-h-screen bg-white pb-24">
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10">
+          
+          {/* HEADER (Sticky) */}
+          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md py-4 border-b border-zinc-100 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => router.back()} className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors">
+                <ArrowLeft size={20} className="text-zinc-600" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">Add New Product</h1>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">Master Catalog Management</p>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
-    </form>
+            <button 
+              type="submit" 
+              disabled={mutation.isPending || images.length === 0} 
+              className="bg-[#006044] text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-green-100 hover:bg-[#004d36] transition-all flex items-center gap-2 disabled:bg-zinc-300 disabled:shadow-none"
+            >
+              {mutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              {mutation.isPending ? 'PUBLISHING...' : 'PUBLISH TO CATALOG'}
+            </button>
+          </div>
+
+          {/* MAIN FORM GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* LEFT COLUMN (Wider) */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* SECTION: BASIC INFO */}
+              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Title *</label>
+                    <input {...register("name", { required: true })} placeholder="e.g. Organic Aloe Vera Gel" className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Base Selling Price *</label>
+                    <input {...register("price", { required: true })} type="number" step="0.01" placeholder="₹0.00" className="w-full p-4 border rounded-2xl outline-none font-black text-xl bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">MRP (Old Price)</label>
+                    <input {...register("oldPrice")} type="number" step="0.01" placeholder="₹0.00" className="w-full p-4 border rounded-2xl outline-none text-zinc-400 font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Description</label>
+                  <textarea {...register("description")} placeholder="Describe this product for your customers..." rows={5} className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white" />
+                </div>
+              </div>
+
+              {/* SECTION: IMAGES */}
+              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Image Gallery (Min 1) *</label>
+                </div>
+                <div className="flex gap-4 flex-wrap">
+                  {images.map((url, i) => (
+                    <div key={i} className="relative h-32 w-32 rounded-3xl overflow-hidden border shadow-sm group">
+                      <img src={url} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt={`upload-${i}`} />
+                      <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"><X size={14}/></button>
+                    </div>
+                  ))}
+                  <CldUploadWidget 
+                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} 
+                    options={{ multiple: true }}
+                    onSuccess={(result: any) => {
+                      if (result.event === "success") {
+                        setImages((prev) => [...prev, result.info.secure_url]);
+                      }
+                    }}
+                  >
+                    {({ open }) => (
+                      <button type="button" onClick={() => open()} className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent">
+                        <Upload size={28} />
+                        <span className="text-[10px] font-black mt-2 tracking-widest uppercase">Add Photos</span>
+                      </button>
+                    )}
+                  </CldUploadWidget>
+                </div>
+              </div>
+
+              {/* ✅ THE MODULAR A+ CONTENT BUILDER */}
+              <APlusContentBuilder />
+
+            </div>
+
+            {/* RIGHT COLUMN (Sidebar items) */}
+            <div className="space-y-8">
+
+              {/* SECTION: ASSIGNMENT & STATUS */}
+              <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Store *</label>
+                  <select {...register("storeId", { required: true })} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                    <option value="">Choose Store</option>
+                    {Array.isArray(stores) && stores.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Category *</label>
+                  <select {...register("categoryId", { required: true })} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                    <option value="">Choose Category</option>
+                    {Array.isArray(categories) && categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                </div>
+                <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer">
+                  <input type="checkbox" {...register("isActive")} className="w-5 h-5 accent-[#006044]" />
+                  <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Set Product Live</span>
+                </label>
+              </div>
+
+              {/* SECTION: COMPLIANCE */}
+              <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-4">
+                <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-[#006044]" /> Extra Details
+                </label>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Manufacturer</label>
+                    <input {...register("extra.manufacturer")} placeholder="e.g. AE Naturals" className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Origin</label>
+                    <input {...register("extra.countryOfOrigin")} placeholder="e.g. India" className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ingredients List</label>
+                    <textarea {...register("ingredients")} rows={2} className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Safety Info</label>
+                    <textarea {...register("extra.safetyInfo")} rows={2} className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: VARIANTS */}
+              <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    <Layers size={18} className="text-[#006044]" /> Variants
+                  </label>
+                  <button type="button" onClick={() => appendVariant({ name: "", priceModifier: 0, stock: 10 })} className="text-[10px] font-black bg-white border px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-all">
+                    + ADD
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {variantFields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center bg-white p-2 rounded-2xl border">
+                      <input {...register(`variants.${index}.name` as any)} placeholder="Name" className="p-2 w-full outline-none text-xs font-bold" />
+                      <input {...register(`variants.${index}.priceModifier` as any)} type="number" placeholder="Price" className="p-2 w-16 border-l outline-none text-xs font-bold" />
+                      <input {...register(`variants.${index}.stock` as any)} type="number" placeholder="Qty" className="p-2 w-14 border-l outline-none text-xs font-bold" />
+                      <button type="button" onClick={() => removeVariant(index)} className="p-2 text-zinc-300 hover:text-rose-500"><Trash2 size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION: SPECIFICATIONS */}
+              <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Tech Specs</label>
+                  <button type="button" onClick={() => appendAttr({ name: "", value: "" })} className="text-[10px] font-black bg-white border px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-all">
+                    + ADD
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {attrFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center bg-white p-2 rounded-2xl border">
+                      <input {...register(`attributes.${index}.name` as any)} placeholder="Key (e.g. Size)" className="w-1/2 p-2 outline-none text-xs font-black uppercase tracking-tighter" />
+                      <input {...register(`attributes.${index}.value` as any)} placeholder="Value" className="w-1/2 p-2 outline-none text-xs font-bold border-l" />
+                      <button type="button" onClick={() => removeAttr(index)} className="p-2 text-zinc-300 hover:text-rose-500"><Trash2 size={16}/></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CARE & DELIVERY */}
+              <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">Care Rules <Plus size={14} className="cursor-pointer text-green-600 bg-green-100 rounded-full p-0.5" onClick={() => appendCare({ value: "" })}/></label>
+                  {careFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center">
+                      <input {...register(`careInstructions.${index}.value` as any)} placeholder="e.g. Keep dry" className="flex-1 p-2 outline-none text-xs font-bold" />
+                      <button type="button" onClick={() => removeCare(index)} className="text-zinc-300 hover:text-rose-500"><X size={14}/></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">Delivery Rules <Plus size={14} className="cursor-pointer text-blue-600 bg-blue-100 rounded-full p-0.5" onClick={() => appendDelivery({ value: "" })}/></label>
+                  {deliveryFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center">
+                      <input {...register(`deliveryInfo.${index}.value` as any)} placeholder="e.g. Free shipping" className="flex-1 p-2 outline-none text-xs font-bold" />
+                      <button type="button" onClick={() => removeDelivery(index)} className="text-zinc-300 hover:text-rose-500"><X size={14}/></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </form>
+      </FormProvider>
+    </div>
   );
 }
