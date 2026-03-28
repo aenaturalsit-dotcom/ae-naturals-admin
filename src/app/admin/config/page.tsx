@@ -109,7 +109,7 @@ export default function GeneralConfigPage() {
       <ProviderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={(data) => saveMutation.mutateAsync(data)} // <-- Change to mutateAsync
+        onSave={(data: ProviderConfig) => saveMutation.mutateAsync(data)} // <-- Change to mutateAsync
         initialData={editingProvider}
         activeType={activeTab}
       />
