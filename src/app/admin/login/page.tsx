@@ -8,7 +8,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-100">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl text-center">
-        <h2 className="text-2xl font-bold mb-6">Flower Fairy Admin</h2>
+        <h2 className="text-2xl font-bold mb-6">AE Naturals Admin</h2>
         
         <button
           onClick={() => signIn("google", { callbackUrl: "/admin" })}

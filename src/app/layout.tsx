@@ -6,6 +6,7 @@ import LoginPage from "./admin/login/page";
 import "./globals.css";
 import AuthProvider from "@/components/admin/providers/AuthProvider";
 import { authOptions } from "./api/auth/[...nextauth]/route";
+import { Toaster } from 'react-hot-toast';
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -16,6 +17,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className="antialiased bg-zinc-50">
+        <Toaster position="top-right" reverseOrder={false} />
         <AuthProvider session={session}>
           {isAuthenticated ? (
             <div className="flex min-h-screen">
