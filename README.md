@@ -1,6 +1,6 @@
-# 🌸 AE Naturals Admin Dashboard
+# 🌸 AE Naturals Admin 
 
-The **AE Naturals Admin Dashboard** is a scalable, enterprise-level administrative platform designed to manage modern e-commerce operations efficiently. Built with **Next.js 15**, **TypeScript**, **Shadcn UI**, **TanStack Query**, and **Zod**, the dashboard provides a centralized control panel for administrators to manage products, orders, customers, and multi-store configurations.
+The **AE Naturals Admin ** is a scalable, enterprise-level administrative platform designed to manage modern e-commerce operations efficiently. Built with **Next.js 15**, **TypeScript**, **Shadcn UI**, **TanStack Query**, and **Zod**, the dashboard provides a centralized control panel for administrators to manage products, orders, customers, and multi-store configurations.
 
 The system is engineered with a **type-safe, modular, and performance-focused architecture**, enabling reliable data handling, efficient server-state management, and a responsive user experience suitable for both operational teams and store owners.
 
@@ -43,7 +43,7 @@ Responsibilities:
 * UI rendering
 * Form interactions
 * Admin workflows
-* Dashboard navigation
+*  navigation
 
 ---
 
@@ -252,7 +252,7 @@ Contains the routing and page structure using Next.js App Router.
 Includes:
 
 Login page
-Dashboard layout
+ layout
 Orders management pages
 Products management pages
 
