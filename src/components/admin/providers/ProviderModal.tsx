@@ -29,7 +29,7 @@ SMS: {
     STRIPE: ['public_key', 'secret_key', 'webhook_secret'],
     PHONEPE: ['merchant_id', 'salt_key', 'salt_index', 'frontend_url', 'backend_webhook_url', 'is_production'],
     // ✅ ADDED PAYU SCHEMA HERE
-    PAYU: ['merchant_key', 'merchant_salt', 'backend_webhook_url', 'is_production'],
+    PAYU: ['merchant_key', 'merchant_salt','frontend_url', 'backend_webhook_url', 'is_production'],
   },
 };
 

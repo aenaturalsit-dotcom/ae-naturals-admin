@@ -5,10 +5,18 @@ interface SwitchProps {
   onChange: (checked: boolean) => void;
   label?: string;
   description?: string;
+  // 1. Add disabled to the interface
+  disabled?: boolean; 
 }
 
-export const Switch = ({ checked, onChange, label, description }: SwitchProps) => (
-  <div className="flex items-center justify-between">
+export const Switch = ({ 
+  checked, 
+  onChange, 
+  label, 
+  description, 
+  disabled = false // 2. Destructure with a default value
+}: SwitchProps) => (
+  <div className={`flex items-center justify-between ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
     {(label || description) && (
       <div className="flex flex-col">
         {label && <span className="text-sm font-medium text-gray-900">{label}</span>}
@@ -17,8 +25,12 @@ export const Switch = ({ checked, onChange, label, description }: SwitchProps) =
     )}
     <button
       type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 ${checked ? 'bg-rose-500' : 'bg-gray-200'}`}
+      // 3. Prevent clicks if disabled
+      onClick={() => !disabled && onChange(!checked)} 
+      disabled={disabled}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 ${
+        disabled ? 'cursor-not-allowed bg-gray-200' : 'cursor-pointer'
+      } ${checked ? 'bg-rose-500' : 'bg-gray-200'}`}
       role="switch"
       aria-checked={checked}
     >
