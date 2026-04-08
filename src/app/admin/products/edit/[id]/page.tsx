@@ -78,6 +78,11 @@ export default function EditProductPage() {
           isActive: product.isActive ?? true,
           // 🔥 Extract existing highlight IDs from the relational array
           highlightIds: existingHighlights?.map((h: any) => h.id) || [],
+          // 🔥 NEW: Pre-fill shipping dimensions
+          shippingWeightKg: product.shippingWeightKg?.toString() || "",
+          lengthCm: product.lengthCm?.toString() || "",
+          widthCm: product.widthCm?.toString() || "",
+          heightCm: product.heightCm?.toString() || "",
           careInstructions: product.careInstructions?.length
             ? product.careInstructions.map((v: string) => ({ value: v }))
             : [{ value: "" }],
@@ -143,6 +148,11 @@ export default function EditProductPage() {
         ...formData,
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+        // 🔥 NEW: Parse shipping dimensions strictly
+        shippingWeightKg: parseFloat(formData.shippingWeightKg),
+        lengthCm: parseFloat(formData.lengthCm),
+        widthCm: parseFloat(formData.widthCm),
+        heightCm: parseFloat(formData.heightCm),
         images: images,
         highlightIds: formData.highlightIds || [], // 🔥 Send updated highlights array
         careInstructions: formData.careInstructions
@@ -276,6 +286,58 @@ export default function EditProductPage() {
                     rows={5}
                     className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white"
                   />
+                </div>
+              </div>
+
+              {/* 🔥 NEW SECTION: SHIPPING & LOGISTICS */}
+              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
+                <div className="space-y-1 border-b border-zinc-200 pb-4">
+                  <label className="text-xs font-black text-[#006044] uppercase tracking-widest flex items-center gap-2">
+                    📦 Shipping Dimensions (Required for Logistics)
+                  </label>
+                  <p className="text-xs text-zinc-500 font-medium">
+                    These dimensions are required by Shiprocket to accurately calculate delivery charges and generate waybills.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Weight (KG) *</label>
+                    <input 
+                      {...register("shippingWeightKg", { required: true, min: 0.01 })} 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 0.5" 
+                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Length (CM) *</label>
+                    <input 
+                      {...register("lengthCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 15" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Width (CM) *</label>
+                    <input 
+                      {...register("widthCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 10" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Height (CM) *</label>
+                    <input 
+                      {...register("heightCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 5" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -60,7 +60,11 @@ export default function AddProductPage() {
         directions: "",
         legalDisclaimer: "",
         aPlusContent: [] as any[] 
-      }
+      },
+      shippingWeightKg: "",
+      lengthCm: "",
+      widthCm: "",
+      heightCm: "",
     }
   });
 
@@ -92,6 +96,11 @@ export default function AddProductPage() {
           stock: parseInt(v.stock || 0)
         })),
         slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        // 🔥 NEW: Parse shipping dimensions strictly
+        shippingWeightKg: parseFloat(formData.shippingWeightKg),
+        lengthCm: parseFloat(formData.lengthCm),
+        widthCm: parseFloat(formData.widthCm),
+        heightCm: parseFloat(formData.heightCm),
       };
 
       return adminProductService.createProduct(payload);
@@ -158,6 +167,58 @@ export default function AddProductPage() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Description</label>
                   <textarea {...register("description")} placeholder="Describe this product for your customers..." rows={5} className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white" />
+                </div>
+              </div>
+
+              {/* 🔥 NEW SECTION: SHIPPING & LOGISTICS */}
+              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
+                <div className="space-y-1 border-b border-zinc-200 pb-4">
+                  <label className="text-xs font-black text-[#006044] uppercase tracking-widest flex items-center gap-2">
+                    📦 Shipping Dimensions (Required for Logistics)
+                  </label>
+                  <p className="text-xs text-zinc-500 font-medium">
+                    These dimensions are required by Shiprocket to accurately calculate delivery charges and generate waybills.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Weight (KG) *</label>
+                    <input 
+                      {...register("shippingWeightKg", { required: true, min: 0.01 })} 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 0.5" 
+                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Length (CM) *</label>
+                    <input 
+                      {...register("lengthCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 15" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Width (CM) *</label>
+                    <input 
+                      {...register("widthCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 10" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Height (CM) *</label>
+                    <input 
+                      {...register("heightCm", { required: true, min: 1 })} 
+                      type="number" 
+                      placeholder="e.g. 5" 
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    />
+                  </div>
                 </div>
               </div>
 
