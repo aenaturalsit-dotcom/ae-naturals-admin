@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Menu, X, Tags, Sparkles, Layers, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Menu, X, Tags, Sparkles, Layers, FileText, ListTree } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 export const Sidebar = () => {
@@ -24,6 +24,7 @@ export const Sidebar = () => {
     { href: '/admin/categories', icon: Tags, label: "Categories" },
     { href: '/admin/collections', icon: Layers, label: "Collections" },
     { href: '/admin/blogs', icon: FileText, label: "Blogs & Journal" },
+    { href: '/admin/menus', icon: ListTree, label: "Navigation" },
     { href: '/admin/features', icon: Sparkles, label: "Highlights" },
     { href: '/admin/config', icon: Settings, label: "General Config" },
   ];
