@@ -50,9 +50,19 @@ export default function MenuBuilder({ slug }: { slug: string }) {
       ]);
       const menu = menuRes?.data || menuRes;
       setGroups(menu?.groups || []);
-      setCollections(colRes || []);
-      setCategories(catRes || []);
-      setProducts(prodRes || []);
+
+      // 🔥 FIX 1: Safely extract arrays (handles { data: [...] } wrappers)
+      const extractList = (res: any) => {
+        if (Array.isArray(res)) return res;
+        if (res?.data && Array.isArray(res.data)) return res.data;
+        if (res?.data?.data && Array.isArray(res.data.data))
+          return res.data.data;
+        return [];
+      };
+
+      setCollections(extractList(colRes));
+      setCategories(extractList(catRes));
+      setProducts(extractList(prodRes));
     } catch (e) {
       toast.error("Failed to load menu data");
     } finally {
@@ -70,7 +80,13 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           image: g.image || null,
           link: g.link || null,
           position: gIdx,
-          columns: (g.columns || []).map((c: any, cIdx: number) => ({
+          
+          // 🔥 1. ADD THESE TWO LINES
+          type: g.type || "dropdown",
+          navLink: g.type === "link" ? (g.navLink || "") : null,
+          
+          // 🔥 2. STRIP COLUMNS IF IT IS A LINK
+          columns: g.type === "link" ? [] : (g.columns || []).map((c: any, cIdx: number) => ({
             title: c.title,
             position: cIdx,
             items: (c.items || []).map((i: any, iIdx: number) => ({
@@ -83,6 +99,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           })),
         })),
       };
+      
       await adminMenusService.updateMenu(slug, payload);
       toast.success("Menu published successfully", { id: toastId });
     } catch (e) {
@@ -169,22 +186,45 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                       u[gIdx].title = e.target.value;
                       setGroups(u);
                     }}
-                    className="text-xl font-black w-full bg-transparent focus:outline-none text-slate-900"
+                    className="text-xl font-black w-auto bg-transparent focus:outline-none text-slate-900"
                     placeholder="GROUP TITLE"
                   />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
+
+                  {/* 🔥 TYPE SELECTOR */}
+                  <select
+                    value={group.type || "dropdown"}
+                    onChange={(e) => {
                       const u = [...groups];
-                      if (!u[gIdx].columns) u[gIdx].columns = [];
-                      u[gIdx].columns.push({ title: "New Column", items: [] });
+                      u[gIdx].type = e.target.value;
+                      if (e.target.value === "dropdown" && !u[gIdx].columns)
+                        u[gIdx].columns = [];
                       setGroups(u);
                     }}
-                    className="h-10 px-4 rounded-xl text-xs font-bold bg-slate-50 text-slate-600 hover:bg-black hover:text-white transition-all"
+                    className="ml-4 bg-slate-100 border-none rounded-xl px-3 py-1.5 text-[11px] font-bold text-slate-600 uppercase tracking-wider focus:ring-2 focus:ring-[#006044] cursor-pointer"
                   >
-                    + Add Column
-                  </button>
+                    <option value="dropdown">Mega Menu</option>
+                    <option value="link">Direct Link</option>
+                  </select>
+                </div>
+
+                {/* 🔥 HIDE ADD COLUMN BUTTON FOR LINKS */}
+                <div className="flex items-center gap-2">
+                  {group.type !== "link" && (
+                    <button
+                      onClick={() => {
+                        const u = [...groups];
+                        if (!u[gIdx].columns) u[gIdx].columns = [];
+                        u[gIdx].columns.push({
+                          title: "New Column",
+                          items: [],
+                        });
+                        setGroups(u);
+                      }}
+                      className="h-10 px-4 rounded-xl text-xs font-bold bg-slate-50 text-slate-600 hover:bg-black hover:text-white transition-all"
+                    >
+                      + Add Column
+                    </button>
+                  )}
                   <button
                     onClick={() =>
                       setGroups(groups.filter((_, i) => i !== gIdx))
@@ -195,165 +235,231 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                   </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {(group.columns || []).map((col: any, cIdx: number) => (
-                  <div
-                    key={cIdx}
-                    className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <input
-                        value={col.title}
-                        onChange={(e) => {
-                          const u = [...groups];
-                          u[gIdx].columns[cIdx].title = e.target.value;
-                          setGroups(u);
-                        }}
-                        className="font-bold text-xs uppercase tracking-widest bg-transparent w-full text-slate-400 focus:text-[#006044] outline-none"
-                      />
-                      <button
-                        onClick={() => {
-                          const u = [...groups];
-                          u[gIdx].columns.splice(cIdx, 1);
-                          setGroups(u);
-                        }}
-                        className="text-slate-300 hover:text-rose-500"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(col.items || []).map((item: any, iIdx: number) => (
-                        <div
-                          key={iIdx}
-                          className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm relative group/item"
+              {/* 🔥 CONDITIONAL RENDERING */}
+              {group.type === "link" ? (
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block">
+                    Direct Navigation Link Path
+                  </label>
+                  <input
+                    value={group.navLink || ""}
+                    onChange={(e) => {
+                      const u = [...groups];
+                      u[gIdx].navLink = e.target.value;
+                      setGroups(u);
+                    }}
+                    placeholder="e.g. /blog or /contact-us"
+                    className="w-full max-w-md bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#006044] focus:ring-1 focus:ring-[#006044]"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {(group.columns || []).map((col: any, cIdx: number) => (
+                    <div
+                      key={cIdx}
+                      className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <input
+                          value={col.title}
+                          onChange={(e) => {
+                            const u = [...groups];
+                            u[gIdx].columns[cIdx].title = e.target.value;
+                            setGroups(u);
+                          }}
+                          className="font-bold text-xs uppercase tracking-widest bg-transparent w-full text-slate-400 focus:text-[#006044] outline-none"
+                        />
+                        <button
+                          onClick={() => {
+                            const u = [...groups];
+                            u[gIdx].columns.splice(cIdx, 1);
+                            setGroups(u);
+                          }}
+                          className="text-slate-300 hover:text-rose-500"
                         >
-                          <div className="flex items-center justify-between">
-                            <select
-                              value={item.type}
-                              onChange={(e) => {
-                                const u = [...groups];
-                                u[gIdx].columns[cIdx].items[iIdx] = {
-                                  ...item,
-                                  type: e.target.value,
-                                  label: "",
-                                  slug: "",
-                                  referenceId: null,
-                                };
-                                setGroups(u);
-                              }}
-                              className="bg-slate-50 border-none rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-tighter cursor-pointer"
-                            >
-                              {MENU_TYPES.map((t) => (
-                                <option key={t.value} value={t.value}>
-                                  {t.label}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={() => {
-                                const u = [...groups];
-                                u[gIdx].columns[cIdx].items.splice(iIdx, 1);
-                                setGroups(u);
-                              }}
-                              className="text-slate-200 hover:text-rose-500 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
 
-                          <div className="space-y-2">
-                            {item.type === "COLLECTION" && (
+                      <div className="space-y-3">
+                        {(col.items || []).map((item: any, iIdx: number) => (
+                          <div
+                            key={iIdx}
+                            className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm relative group/item"
+                          >
+                            <div className="flex items-center justify-between">
                               <select
-                                value={item.referenceId || ""}
+                                value={item.type}
                                 onChange={(e) => {
-                                  const selected = collections.find(
-                                    (c) => c.id === e.target.value,
-                                  );
-                                  if (!selected) return;
                                   const u = [...groups];
                                   u[gIdx].columns[cIdx].items[iIdx] = {
                                     ...item,
-                                    label: selected.name,
-                                    slug: selected.slug,
-                                    referenceId: selected.id,
+                                    type: e.target.value,
+                                    label: "",
+                                    slug: "",
+                                    referenceId: null,
                                   };
                                   setGroups(u);
                                 }}
-                                className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
+                                className="bg-slate-50 border-none rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-tighter cursor-pointer"
                               >
-                                <option value="">Select Collection</option>
-                                {collections.map((c) => (
-                                  <option key={c.id} value={c.id}>
-                                    {c.name}
+                                {MENU_TYPES.map((t) => (
+                                  <option key={t.value} value={t.value}>
+                                    {t.label}
                                   </option>
                                 ))}
                               </select>
-                            )}
-
-                            {item.type === "CATEGORY" && (
-                              <select
-                                value={item.referenceId || ""}
-                                onChange={(e) => {
-                                  const selected = categories.find(
-                                    (c) => c.id === e.target.value,
-                                  );
-                                  if (!selected) return;
+                              <button
+                                onClick={() => {
                                   const u = [...groups];
-                                  u[gIdx].columns[cIdx].items[iIdx] = {
-                                    ...item,
-                                    label: selected.name,
-                                    slug: selected.slug,
-                                    referenceId: selected.id,
-                                  };
+                                  u[gIdx].columns[cIdx].items.splice(iIdx, 1);
                                   setGroups(u);
                                 }}
-                                className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
+                                className="text-slate-200 hover:text-rose-500 transition-colors"
                               >
-                                <option value="">Select Category</option>
-                                {categories.map((c) => (
-                                  <option key={c.id} value={c.id}>
-                                    {c.name}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
 
-                            {item.type === "PRODUCT" && (
-                              <select
-                                value={item.referenceId || ""}
-                                onChange={(e) => {
-                                  const selected = products.find(
-                                    (p) => p.id === e.target.value,
-                                  );
-                                  if (!selected) return;
-                                  const u = [...groups];
-                                  u[gIdx].columns[cIdx].items[iIdx] = {
-                                    ...item,
-                                    label: selected.name,
-                                    slug: selected.slug,
-                                    referenceId: selected.id,
-                                  };
-                                  setGroups(u);
-                                }}
-                                className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
-                              >
-                                <option value="">Select Product</option>
-                                {products.map((p) => (
-                                  <option key={p.id} value={p.id}>
-                                    {p.name}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
+                            <div className="space-y-2">
+                              {item.type === "COLLECTION" && (
+                                <select
+                                  value={item.referenceId || ""}
+                                  onChange={(e) => {
+                                    const u = [...groups];
+                                    const val = e.target.value;
 
-                            {(item.type === "EXTERNAL" || !item.type) && (
-                              <div className="space-y-2">
+                                    if (!val) {
+                                      // Allow unselecting
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = null;
+                                      setGroups(u);
+                                      return;
+                                    }
+
+                                    const selected = collections.find(
+                                      (c) => c.id === val,
+                                    );
+                                    if (selected) {
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = selected.id;
+                                      u[gIdx].columns[cIdx].items[iIdx].slug =
+                                        selected.slug;
+                                      // Only auto-fill if empty so we don't overwrite custom labels
+                                      if (
+                                        !u[gIdx].columns[cIdx].items[iIdx].label
+                                      ) {
+                                        u[gIdx].columns[cIdx].items[
+                                          iIdx
+                                        ].label = selected.name;
+                                      }
+                                    }
+                                    setGroups(u);
+                                  }}
+                                  className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
+                                >
+                                  <option value="">Select Collection</option>
+                                  {collections.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+
+                              {item.type === "CATEGORY" && (
+                                <select
+                                  value={item.referenceId || ""}
+                                  onChange={(e) => {
+                                    const u = [...groups];
+                                    const val = e.target.value;
+                                    if (!val) {
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = null;
+                                      setGroups(u);
+                                      return;
+                                    }
+                                    const selected = categories.find(
+                                      (c) => c.id === val,
+                                    );
+                                    if (selected) {
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = selected.id;
+                                      u[gIdx].columns[cIdx].items[iIdx].slug =
+                                        selected.slug;
+                                      if (
+                                        !u[gIdx].columns[cIdx].items[iIdx].label
+                                      ) {
+                                        u[gIdx].columns[cIdx].items[
+                                          iIdx
+                                        ].label = selected.name;
+                                      }
+                                    }
+                                    setGroups(u);
+                                  }}
+                                  className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
+                                >
+                                  <option value="">Select Category</option>
+                                  {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+
+                              {item.type === "PRODUCT" && (
+                                <select
+                                  value={item.referenceId || ""}
+                                  onChange={(e) => {
+                                    const u = [...groups];
+                                    const val = e.target.value;
+                                    if (!val) {
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = null;
+                                      setGroups(u);
+                                      return;
+                                    }
+                                    const selected = products.find(
+                                      (p) => p.id === val,
+                                    );
+                                    if (selected) {
+                                      u[gIdx].columns[cIdx].items[
+                                        iIdx
+                                      ].referenceId = selected.id;
+                                      u[gIdx].columns[cIdx].items[iIdx].slug =
+                                        selected.slug;
+                                      if (
+                                        !u[gIdx].columns[cIdx].items[iIdx].label
+                                      ) {
+                                        u[gIdx].columns[cIdx].items[
+                                          iIdx
+                                        ].label = selected.name;
+                                      }
+                                    }
+                                    setGroups(u);
+                                  }}
+                                  className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm font-medium"
+                                >
+                                  <option value="">Select Product</option>
+                                  {products.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+
+                              {/* 🔥 FIX 2: ALWAYS show the Label and Slug so the user can see saved data */}
+                              <div className="space-y-2 mt-3 pt-3 border-t border-slate-50">
                                 <input
-                                  placeholder="Label (e.g. Help Center)"
-                                  value={item.label}
+                                  placeholder="Display Label (e.g. Shop Now)"
+                                  value={item.label || ""}
                                   onChange={(e) => {
                                     const u = [...groups];
                                     u[gIdx].columns[cIdx].items[iIdx].label =
@@ -364,39 +470,46 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                                 />
                                 <input
                                   placeholder="Slug/URL (e.g. /support)"
-                                  value={item.slug}
+                                  value={item.slug || ""}
+                                  readOnly={
+                                    item.type !== "EXTERNAL" && !!item.type
+                                  }
                                   onChange={(e) => {
                                     const u = [...groups];
                                     u[gIdx].columns[cIdx].items[iIdx].slug =
                                       e.target.value;
                                     setGroups(u);
                                   }}
-                                  className="w-full border-slate-200 border rounded-xl px-3 py-2 text-sm"
+                                  className={`w-full border-slate-200 border rounded-xl px-3 py-2 text-sm ${
+                                    item.type !== "EXTERNAL" && !!item.type
+                                      ? "bg-slate-50 text-slate-400 cursor-not-allowed"
+                                      : ""
+                                  }`}
                                 />
                               </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          const u = [...groups];
-                          u[gIdx].columns[cIdx].items.push({
-                            label: "",
-                            slug: "",
-                            type: "COLLECTION",
-                            referenceId: null,
-                          });
-                          setGroups(u);
-                        }}
-                        className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-slate-300 hover:border-[#006044] hover:text-[#006044] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
-                      >
-                        <Plus size={14} /> Add Link
-                      </button>
+                        ))}
+                        <button
+                          onClick={() => {
+                            const u = [...groups];
+                            u[gIdx].columns[cIdx].items.push({
+                              label: "",
+                              slug: "",
+                              type: "COLLECTION",
+                              referenceId: null,
+                            });
+                            setGroups(u);
+                          }}
+                          className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-200 text-slate-300 hover:border-[#006044] hover:text-[#006044] transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase"
+                        >
+                          <Plus size={14} /> Add Link
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
