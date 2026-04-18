@@ -1,3 +1,5 @@
+// src\app\admin\products\page.tsx
+
 'use client';
 
 import { useState } from 'react';
@@ -5,7 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusCircle, Loader2, Package, CheckCircle2, AlertCircle, Trash2, Edit3 } from 'lucide-react';
 import apiClient from '@/lib/api-client';
 import { AddProductModal } from '@/components/admin/AddProductModal';
-import { EditProductModal } from '@/components/admin/EditProductModal'; // New Component
 import { adminProductService } from '@/services/admin-products.service';
 import { Product } from '@/types/types';
 import { useRouter } from "next/navigation";
@@ -13,15 +14,17 @@ import { useRouter } from "next/navigation";
 
 export default function ProductsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null); // Track product to edit
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const queryClient = useQueryClient();
-// 2. Inside your component
-const router = useRouter();
+  const router = useRouter();
+
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ['admin-products'],
     queryFn: async () => {
+      // Make sure your API is actually returning the array directly.
+      // If it returns { data: [...] }, you might need to return response.data instead.
       const response = await apiClient.get('/admin/products');
-      return response as unknown as Product[];
+      return (response as any)?.data || response as unknown as Product[];
     },
   });
 
@@ -62,7 +65,6 @@ const router = useRouter();
         {Array.isArray(products) && products?.map((product) => (
           <div key={product.id} className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group relative">
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {/* EDIT BUTTON NOW FUNCTIONAL */}
               <button 
                 onClick={() => router.push(`/admin/products/edit/${product.id}`)}
                 className="p-2 bg-white border border-zinc-100 rounded-lg text-zinc-400 hover:text-rose-500 shadow-sm transition-colors"
@@ -81,7 +83,10 @@ const router = useRouter();
               <div className="flex justify-between items-start mb-4 border-b border-zinc-50 pb-3">
                 <h3 className="font-bold text-lg text-zinc-800 line-clamp-1">{product.name}</h3>
                 <span className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-1 rounded-full uppercase font-black tracking-tighter">
-                  {typeof product.category === 'object' ? product.category.name : product.category}
+                  {/* 🔥 THE FIX: Check if product.category is truthy first */}
+                  {product.category 
+                    ? (typeof product.category === 'object' ? product.category.name : product.category) 
+                    : 'Uncategorized'}
                 </span>
               </div>
               
@@ -94,14 +99,19 @@ const router = useRouter();
             </div>
           </div>
         ))}
+        
+        {(!products || products.length === 0) && (
+          <div className="col-span-full p-10 text-center border-2 border-dashed border-zinc-200 rounded-2xl text-zinc-500">
+            No products found. Add your first product to get started!
+          </div>
+        )}
       </div>
 
       <AddProductModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
       />
-
-      
     </div>
   );
 }
+

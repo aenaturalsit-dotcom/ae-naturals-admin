@@ -1,3 +1,5 @@
+//  src\app\admin\blogs\BlogForm.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,7 +20,7 @@ export default function BlogForm({
   isEditing = false,
 }: BlogFormProps) {
   const router = useRouter();
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]); // Initialized as []
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -33,13 +35,18 @@ export default function BlogForm({
     isPublished: initialData?.isPublished || false,
   });
 
- useEffect(() => {
-  AdminBlogsService.getCategories()
-    .then((res) => {
-      setCategories(res.data); // ✅ correct
-    })
-    .catch(console.error);
-}, []);
+  useEffect(() => {
+    AdminBlogsService.getCategories()
+      .then((res) => {
+        // Ensure we are setting an array even if the API returns something else
+        const data = res?.data || res || [];
+        setCategories(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch categories:", err);
+        setCategories([]); // Fallback to empty array on error
+      });
+  }, []);
 
   // ✅ GLOBAL SCROLL FIX
   useEffect(() => {
@@ -101,7 +108,7 @@ export default function BlogForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 relative pb-10">
-      {/* 🔥 STICKY ACTION BAR - ALWAYS VISIBLE 🔥 */}
+      {/* ACTION BAR */}
       <div className="sticky top-4 z-40 bg-white/80 backdrop-blur-md border border-gray-200 shadow-sm rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
         <div className="flex items-center gap-3">
           <button
@@ -116,9 +123,7 @@ export default function BlogForm({
               {isEditing ? "Edit Blog Post" : "Create New Blog"}
             </h2>
             <p className="text-xs text-gray-500">
-              {formData.isPublished
-                ? "Currently visible to public"
-                : "Saved as a draft"}
+              {formData.isPublished ? "Currently visible to public" : "Saved as a draft"}
             </p>
           </div>
         </div>
@@ -136,18 +141,13 @@ export default function BlogForm({
             disabled={isLoading}
             className="px-5 py-2.5 text-sm font-medium bg-[#006044] text-white rounded-lg hover:bg-[#004d36] transition-colors flex items-center justify-center gap-2 w-full sm:w-auto disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
           >
-            {isLoading ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <Save size={18} />
-            )}
+            {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
             {isLoading ? "Saving..." : "Save Blog"}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-        {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6 space-y-5 shadow-sm border-gray-100">
             <div>
@@ -172,14 +172,9 @@ export default function BlogForm({
                 required
                 type="text"
                 value={formData.slug}
-                onChange={(e) =>
-                  setFormData({ ...formData, slug: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-600 bg-gray-50 outline-none"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                This is automatically generated from the title.
-              </p>
             </div>
 
             <div>
@@ -191,27 +186,20 @@ export default function BlogForm({
                 rows={3}
                 placeholder="A brief summary of the article..."
                 value={formData.excerpt}
-                onChange={(e) =>
-                  setFormData({ ...formData, excerpt: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1.5 flex justify-between">
-                <span>
-                  Article Content (HTML supported){" "}
-                  <span className="text-red-500">*</span>
-                </span>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Article Content (HTML supported) <span className="text-red-500">*</span>
               </label>
               <textarea
                 required
                 rows={18}
                 value={formData.content}
-                onChange={(e) =>
-                  setFormData({ ...formData, content: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="<p>Write your beautiful blog post here...</p>"
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all font-mono text-sm leading-relaxed"
               />
@@ -219,172 +207,103 @@ export default function BlogForm({
           </Card>
         </div>
 
-        {/* Sidebar Controls */}
-<div className="space-y-6">
-  {/* Publishing */}
-  <Card className="p-6 space-y-5 shadow-sm border-gray-100">
-    <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">
-      Publishing Details
-    </h3>
+        <div className="space-y-6">
+          <Card className="p-6 space-y-5 shadow-sm border-gray-100">
+            <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Publishing Details</h3>
+            <div className="flex items-center justify-between group">
+              <div>
+                <span className="block text-sm font-semibold text-gray-800">Publish Article</span>
+                <span className="text-xs text-gray-500">Make visible on storefront</span>
+              </div>
+              <Switch
+                checked={formData.isPublished}
+                onChange={(checked) => setFormData({ ...formData, isPublished: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between group pt-2 border-t border-gray-50">
+              <div>
+                <span className="block text-sm font-semibold text-gray-800">Featured</span>
+                <span className="text-xs text-gray-500">Pin to hero section</span>
+              </div>
+              <Switch
+                checked={formData.isFeatured}
+                onChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
+              />
+            </div>
+          </Card>
 
-    <div className="flex items-center justify-between group">
-      <div>
-        <span className="block text-sm font-semibold text-gray-800">
-          Publish Article
-        </span>
-        <span className="text-xs text-gray-500">
-          Make visible on storefront
-        </span>
-      </div>
-      <Switch
-        checked={formData.isPublished}
-        onChange={(checked) =>
-          setFormData({ ...formData, isPublished: checked })
-        }
-      />
-    </div>
+          <Card className="p-6 space-y-5 shadow-sm border-gray-100">
+            <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Organization</h3>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                required
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all"
+              >
+                <option value="" disabled>Select a category</option>
+                {/* Added optional chaining and fallback for total safety */}
+                {(categories || []).map((cat) => (
+                  <option key={cat.id || cat._id} value={cat.id || cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-    <div className="flex items-center justify-between group pt-2 border-t border-gray-50">
-      <div>
-        <span className="block text-sm font-semibold text-gray-800">
-          Featured
-        </span>
-        <span className="text-xs text-gray-500">
-          Pin to hero section
-        </span>
-      </div>
-      <Switch
-        checked={formData.isFeatured}
-        onChange={(checked) =>
-          setFormData({ ...formData, isFeatured: checked })
-        }
-      />
-    </div>
-  </Card>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Tags</label>
+              <input
+                type="text"
+                value={formData.tags}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                placeholder="skincare, routine, tips"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all text-sm"
+              />
+            </div>
+          </Card>
 
-  {/* 🔥 ORGANIZATION SECTION (THIS WAS MISSING) */}
-  <Card className="p-6 space-y-5 shadow-sm border-gray-100">
-    <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">
-      Organization
-    </h3>
-
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-        Category <span className="text-red-500">*</span>
-      </label>
-      <select
-        required
-        value={formData.categoryId}
-        onChange={(e) =>
-          setFormData({ ...formData, categoryId: e.target.value })
-        }
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all"
-      >
-        <option value="" disabled>
-          Select a category
-        </option>
-        {categories.map((cat) => (
-          <option key={cat.id} value={cat.id}>
-            {cat.name}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-semibold text-gray-800 mb-1.5">
-        Tags
-      </label>
-      <input
-        type="text"
-        value={formData.tags}
-        onChange={(e) =>
-          setFormData({ ...formData, tags: e.target.value })
-        }
-        placeholder="skincare, routine, tips (comma separated)"
-        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:border-[#006044] focus:ring-1 focus:ring-[#006044] outline-none transition-all text-sm"
-      />
-    </div>
-  </Card>
-
-  {/* COVER IMAGE */}
-  <Card className="p-6 space-y-4 shadow-sm border-gray-100">
-    <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">
-      Cover Image
-    </h3>
-
-    {formData.coverImage ? (
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 group">
-        <img
-          src={formData.coverImage}
-          alt="Cover Preview"
-          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <button
-            type="button"
-            onClick={() =>
-              setFormData({ ...formData, coverImage: "" })
-            }
-            className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 shadow-lg flex items-center gap-2"
-          >
-            <X size={16} /> Remove Image
-          </button>
+          <Card className="p-6 space-y-4 shadow-sm border-gray-100">
+            <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Cover Image</h3>
+            {formData.coverImage ? (
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 group">
+                <img src={formData.coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, coverImage: "" })}
+                    className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 shadow-lg flex items-center gap-2"
+                  >
+                    <X size={16} /> Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <CldUploadWidget
+                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                onSuccess={(result: any) => {
+                  if (result.event === "success") {
+                    setFormData((prev) => ({ ...prev, coverImage: result.info.secure_url }));
+                  }
+                }}
+              >
+                {({ open }) => (
+                  <button
+                    type="button"
+                    onClick={() => open()}
+                    className="w-full aspect-video border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:border-[#006044] bg-gray-50"
+                  >
+                    <Upload size={32} className="mb-3 opacity-80" />
+                    <span className="text-sm font-semibold">Click to upload cover</span>
+                  </button>
+                )}
+              </CldUploadWidget>
+            )}
+          </Card>
         </div>
-      </div>
-    ) : (
-      <div className="flex justify-center">
-        <CldUploadWidget
-          uploadPreset={
-            process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-          }
-          options={{
-            multiple: false,
-            clientAllowedFormats: ["jpg", "jpeg", "png", "webp"],
-          }}
-          onSuccess={(result: any) => {
-            if (result.event === "success") {
-              setFormData((prev) => ({
-                ...prev,
-                coverImage: result.info.secure_url,
-              }));
-
-              setTimeout(() => {
-                document.body.style.overflow = "auto";
-                document.body.style.paddingRight = "0px";
-              }, 100);
-            }
-          }}
-          onClose={() => {
-            setTimeout(() => {
-              document.body.style.overflow = "auto";
-              document.body.style.paddingRight = "0px";
-            }, 100);
-          }}
-        >
-          {({ open }) => (
-            <button
-              type="button"
-              onClick={() => {
-                document.body.style.overflow = "auto";
-                open();
-              }}
-              className="w-full aspect-video border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:border-[#006044] hover:bg-[#006044]/5 hover:text-[#006044] transition-all bg-gray-50"
-            >
-              <Upload size={32} className="mb-3 opacity-80" />
-              <span className="text-sm font-semibold">
-                Click to upload cover
-              </span>
-              <span className="text-xs mt-1 opacity-70">
-                16:9 aspect ratio recommended
-              </span>
-            </button>
-          )}
-        </CldUploadWidget>
-      </div>
-    )}
-  </Card>
-</div>
       </div>
     </form>
   );

@@ -10,6 +10,7 @@ import { Card } from '@/components/admin/ui/Card';
 import { Badge } from '@/components/admin/ui/Badge';
 
 export default function AdminBlogsPage() {
+  // Initialize as empty array to prevent immediate .map errors
   const [blogs, setBlogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,10 +20,19 @@ export default function AdminBlogsPage() {
 
   const fetchBlogs = async () => {
     try {
+      setIsLoading(true);
       const res = await AdminBlogsService.getBlogs();
-      setBlogs(res.data);
+      
+      /** * Debugging Note: 
+       * If this still fails, check your console.log(res) 
+       * to see if the data is at res.data or res.data.blogs
+       */
+      const data = res?.data || res || [];
+      setBlogs(Array.isArray(data) ? data : []);
+      
     } catch (error) {
       console.error('Failed to fetch blogs:', error);
+      setBlogs([]); // Set to empty array on error to prevent crash
     } finally {
       setIsLoading(false);
     }
@@ -75,8 +85,9 @@ export default function AdminBlogsPage() {
                 </tr>
               </thead>
               <tbody>
-                {blogs.map((blog) => (
-                  <tr key={blog.id} className="border-b hover:bg-gray-50">
+                {/* Added optional chaining and fallback to ensure it never reads 'map' of undefined */}
+                {(blogs || []).map((blog) => (
+                  <tr key={blog.id || blog._id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{blog.title}</div>
                       <div className="text-xs text-gray-500">/{blog.slug}</div>
@@ -92,17 +103,18 @@ export default function AdminBlogsPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <Link href={`/admin/blogs/edit/${blog.id}`} className="text-blue-600 hover:text-blue-800">
+                        <Link href={`/admin/blogs/edit/${blog.id || blog._id}`} className="text-blue-600 hover:text-blue-800">
                           <Edit size={18} />
                         </Link>
-                        <button onClick={() => handleDelete(blog.id)} className="text-red-600 hover:text-red-800">
+                        <button onClick={() => handleDelete(blog.id || blog._id)} className="text-red-600 hover:text-red-800">
                           <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-                {blogs.length === 0 && (
+                
+                {(!blogs || blogs.length === 0) && (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-gray-500">No blogs found.</td>
                   </tr>

@@ -7,6 +7,11 @@ import "./globals.css";
 import AuthProvider from "@/components/admin/providers/AuthProvider";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import { Toaster } from 'react-hot-toast';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -15,7 +20,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isAuthenticated = session?.user && (session.user as any).role === "ADMIN";
 
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className="antialiased bg-zinc-50">
         <Toaster position="top-right" reverseOrder={false} />
         <AuthProvider session={session}>
