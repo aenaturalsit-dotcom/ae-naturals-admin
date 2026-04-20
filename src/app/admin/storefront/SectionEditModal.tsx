@@ -1,8 +1,11 @@
+// src\app\admin\storefront\SectionEditModal.tsx
+
+
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { ThemeSection } from "./page";
-import { X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { X, Upload, Loader2, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 
 interface Props {
@@ -21,16 +24,14 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
     }
   }, [section]);
 
-  // ✅ GLOBAL SCROLL FIX (Same as BlogForm to prevent body scroll issues when modal closes)
+  // Global Scroll Fix
   useEffect(() => {
     const restoreScroll = () => {
       document.body.style.overflow = "auto";
       document.body.style.paddingRight = "0px";
     };
-
     window.addEventListener("focus", restoreScroll);
     document.addEventListener("visibilitychange", restoreScroll);
-
     return () => {
       window.removeEventListener("focus", restoreScroll);
       document.removeEventListener("visibilitychange", restoreScroll);
@@ -44,16 +45,52 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
     setSettings((prev: any) => ({ ...prev, [name]: value }));
   };
 
+  // --- HERO BANNER ARRAY HANDLERS ---
+  const addHeroBanner = () => {
+    const current = settings.banners || [];
+    setSettings({ ...settings, banners: [...current, { imageUrl: '', headline: '', subtext: '', primaryCtaText: '', primaryCtaLink: '' }] });
+  };
+
+  const updateHeroBanner = (index: number, field: string, value: string) => {
+    const newBanners = [...(settings.banners || [])];
+    newBanners[index][field] = value;
+    setSettings({ ...settings, banners: newBanners });
+  };
+
+  const removeHeroBanner = (index: number) => {
+    const newBanners = [...(settings.banners || [])];
+    newBanners.splice(index, 1);
+    setSettings({ ...settings, banners: newBanners });
+  };
+
+  // --- TRUST BADGE ARRAY HANDLERS ---
+  const addTrustBadge = () => {
+    const current = settings.badges || [];
+    setSettings({ ...settings, badges: [...current, { text: '' }] });
+  };
+
+  const updateTrustBadge = (index: number, value: string) => {
+    const newBadges = [...(settings.badges || [])];
+    newBadges[index].text = value;
+    setSettings({ ...settings, badges: newBadges });
+  };
+
+  const removeTrustBadge = (index: number) => {
+    const newBadges = [...(settings.badges || [])];
+    newBadges.splice(index, 1);
+    setSettings({ ...settings, badges: newBadges });
+  };
+
   const handleSave = () => {
     onSave({ ...section, settings });
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
         
         {/* HEADER */}
-        <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
           <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight">
               Edit {section.type.replace('_', ' ')}
@@ -65,39 +102,135 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
           </button>
         </div>
 
-        {/* BODY */}
-        <div className="p-8 space-y-6 max-h-[65vh] overflow-y-auto">
+        {/* SCROLLABLE BODY */}
+        <div className="p-8 space-y-8 overflow-y-auto flex-1">
           
+          {/* ================= HERO SLIDER BUILDER ================= */}
+          {section.type === "HERO" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-700">Slider Banners</p>
+                <button type="button" onClick={addHeroBanner} className="flex items-center gap-2 text-sm font-bold text-[#006044] bg-[#006044]/10 px-4 py-2 rounded-xl hover:bg-[#006044]/20 transition-colors">
+                  <Plus size={16} /> Add Banner
+                </button>
+              </div>
+
+              {(settings.banners || []).map((banner: any, index: number) => (
+                <div key={index} className="p-5 border-2 border-gray-100 rounded-2xl bg-gray-50/50 relative group">
+                  <button onClick={() => removeHeroBanner(index)} className="absolute top-4 right-4 text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={16} />
+                  </button>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Slide {index + 1}</h4>
+                  
+                  <div className="space-y-4">
+                    {/* Image Upload */}
+                    <div className="flex items-center gap-4">
+                      {banner.imageUrl ? (
+                        <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-gray-200 group/img">
+                          <img src={banner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-32 h-20 bg-white border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                          <ImageIcon size={20} className="mb-1" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <CldUploadWidget
+                          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                          onSuccess={(result: any) => {
+                            if (result.event === "success") updateHeroBanner(index, 'imageUrl', result.info.secure_url);
+                          }}
+                        >
+                          {({ open }) => (
+                            <button type="button" onClick={() => open()} className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors">
+                              <Upload size={16} /> {banner.imageUrl ? "Replace Desktop Image" : "Upload Desktop Image"}
+                            </button>
+                          )}
+                        </CldUploadWidget>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">Headline</label>
+                        <input type="text" value={banner.headline || ''} onChange={(e) => updateHeroBanner(index, 'headline', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#006044] outline-none" placeholder="Premium Formulations" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">Subtext</label>
+                        <input type="text" value={banner.subtext || ''} onChange={(e) => updateHeroBanner(index, 'subtext', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#006044] outline-none" placeholder="Discover the new range..." />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">Button Text</label>
+                        <input type="text" value={banner.primaryCtaText || ''} onChange={(e) => updateHeroBanner(index, 'primaryCtaText', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#006044] outline-none" placeholder="Shop Now" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1.5">Button Link</label>
+                        <input type="text" value={banner.primaryCtaLink || ''} onChange={(e) => updateHeroBanner(index, 'primaryCtaLink', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#006044] outline-none" placeholder="/collections/all" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!settings.banners || settings.banners.length === 0) && (
+                <div className="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl">
+                  Click "Add Banner" to create your first hero slide.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================= TRUST BADGES BUILDER ================= */}
+          {section.type === "TRUST_BADGES" && (
+             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-700">Scrolling Trust Bar Text</p>
+                <button type="button" onClick={addTrustBadge} className="flex items-center gap-2 text-sm font-bold text-[#006044] bg-[#006044]/10 px-4 py-2 rounded-xl hover:bg-[#006044]/20 transition-colors">
+                  <Plus size={16} /> Add Item
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(settings.badges || []).map((badge: any, index: number) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      value={badge.text || ''} 
+                      onChange={(e) => updateTrustBadge(index, e.target.value)} 
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#006044] outline-none" 
+                      placeholder="e.g. 100% Vegan" 
+                    />
+                    <button onClick={() => removeTrustBadge(index)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {(!settings.badges || settings.badges.length === 0) && (
+                <div className="p-8 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-2xl">
+                  No trust badges configured. Click "Add Item" to start.
+                </div>
+              )}
+           </div>
+          )}
+
           {/* ================= PRODUCT CAROUSEL ================= */}
           {section.type === "PRODUCT_CAROUSEL" && (
             <>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Display Title</label>
-                <input 
-                  type="text" name="title" value={settings.title || ''} onChange={handleChange}
-                  className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                  placeholder="e.g., Trending Right Now"
-                />
+                <input type="text" name="title" value={settings.title || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none" placeholder="Trending Right Now" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Data Source</label>
-                  <select 
-                    name="dataSource" value={settings.dataSource || 'featuredProducts'} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                  >
+                  <select name="dataSource" value={settings.dataSource || 'featuredProducts'} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none">
                     <option value="featuredProducts">Bestsellers (Featured)</option>
                     <option value="newArrivals">New Arrivals</option>
-                    <option value="deals">Deals & Offers</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">View All URL</label>
-                  <input 
-                    type="text" name="viewAllLink" value={settings.viewAllLink || ''} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                    placeholder="/collections/bestsellers"
-                  />
+                  <input type="text" name="viewAllLink" value={settings.viewAllLink || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none" placeholder="/collections/bestsellers" />
                 </div>
               </div>
             </>
@@ -108,74 +241,34 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
             <>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Banner Headline</label>
-                <input 
-                  type="text" name="title" value={settings.title || ''} onChange={handleChange}
-                  className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                  placeholder="e.g., Summer Skincare Sale"
-                />
+                <input type="text" name="title" value={settings.title || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none" />
               </div>
-              
-              {/* ✅ NEXT-CLOUDINARY UPLOAD WIDGET */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Background Image</label>
                 <div className="flex items-center gap-4">
                   {settings.imageUrl ? (
                     <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-gray-200 group">
-                      <img src={settings.imageUrl} alt="Banner Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setSettings({ ...settings, imageUrl: "" })}
-                        className="absolute inset-0 bg-red-600/80 text-white font-medium flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={20} />
-                      </button>
+                      <img src={settings.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setSettings({ ...settings, imageUrl: "" })} className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X size={20} /></button>
                     </div>
                   ) : (
-                    <div className="w-32 h-20 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                      <ImageIcon size={20} className="mb-1" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Preview</span>
-                    </div>
+                    <div className="w-32 h-20 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
                   )}
                   <div className="flex-1">
-                    <CldUploadWidget
-                      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                      onSuccess={(result: any) => {
-                        if (result.event === "success") {
-                          setSettings({ ...settings, imageUrl: result.info.secure_url });
-                        }
-                      }}
-                    >
-                      {({ open }) => (
-                        <button
-                          type="button"
-                          onClick={() => open()}
-                          className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white px-4 py-3 rounded-xl text-sm font-bold transition-colors"
-                        >
-                          <Upload size={18} />
-                          {settings.imageUrl ? "Replace Image" : "Upload New Image"}
-                        </button>
-                      )}
+                    <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} onSuccess={(result: any) => { if (result.event === "success") setSettings({ ...settings, imageUrl: result.info.secure_url }); }}>
+                      {({ open }) => (<button type="button" onClick={() => open()} className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-bold hover:bg-black"><Upload size={18} /> {settings.imageUrl ? "Replace Image" : "Upload Image"}</button>)}
                     </CldUploadWidget>
                   </div>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">CTA Button Text</label>
-                  <input 
-                    type="text" name="buttonText" value={settings.buttonText || ''} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                    placeholder="Shop Sale"
-                  />
+                  <input type="text" name="buttonText" value={settings.buttonText || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">CTA Link URL</label>
-                  <input 
-                    type="text" name="link" value={settings.link || ''} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                    placeholder="/shop"
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">CTA Link</label>
+                  <input type="text" name="link" value={settings.link || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:border-[#006044] outline-none" />
                 </div>
               </div>
             </>
@@ -184,135 +277,37 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
           {/* ================= BRAND STORY ================= */}
           {section.type === "BRAND_STORY" && (
             <>
+              <div><label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Headline</label><input type="text" name="title" value={settings.title || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-[#006044] outline-none" /></div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Story Headline</label>
-                <input 
-                  type="text" name="title" value={settings.title || ''} onChange={handleChange}
-                  className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                  placeholder="The AE Naturals Philosophy"
-                />
-              </div>
-              
-              {/* ✅ NEXT-CLOUDINARY UPLOAD WIDGET */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Brand Story Image</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Story Image</label>
                 <div className="flex items-center gap-4">
                   {settings.imageUrl ? (
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 group">
-                      <img src={settings.imageUrl} alt="Story Preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setSettings({ ...settings, imageUrl: "" })}
-                        className="absolute inset-0 bg-red-600/80 text-white font-medium flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
+                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 group"><img src={settings.imageUrl} alt="Story" className="w-full h-full object-cover" /><button type="button" onClick={() => setSettings({ ...settings, imageUrl: "" })} className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100"><X size={20} /></button></div>
                   ) : (
-                    <div className="w-24 h-24 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                      <ImageIcon size={20} className="mb-1" />
-                    </div>
+                    <div className="w-24 h-24 bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400"><ImageIcon size={20} /></div>
                   )}
                   <div className="flex-1">
-                    <CldUploadWidget
-                      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                      onSuccess={(result: any) => {
-                        if (result.event === "success") {
-                          setSettings({ ...settings, imageUrl: result.info.secure_url });
-                        }
-                      }}
-                    >
-                      {({ open }) => (
-                        <button
-                          type="button"
-                          onClick={() => open()}
-                          className="w-full flex items-center justify-center gap-2 bg-white border-2 border-gray-200 hover:border-gray-900 text-gray-900 px-4 py-3 rounded-xl text-sm font-bold transition-colors"
-                        >
-                          <Upload size={18} />
-                          {settings.imageUrl ? "Replace Image" : "Upload Image"}
-                        </button>
-                      )}
+                    <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} onSuccess={(result: any) => { if (result.event === "success") setSettings({ ...settings, imageUrl: result.info.secure_url }); }}>
+                      {({ open }) => (<button type="button" onClick={() => open()} className="w-full flex items-center justify-center gap-2 bg-white border-2 border-gray-200 text-gray-900 hover:border-gray-900 px-4 py-3 rounded-xl text-sm font-bold"><Upload size={18} /> Replace Image</button>)}
                     </CldUploadWidget>
                   </div>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Philosophy Text</label>
-                <textarea 
-                  name="description" value={settings.description || ''} onChange={handleChange} rows={4}
-                  className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors resize-none"
-                  placeholder="Write your brand's ethos here..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Button Text</label>
-                  <input 
-                    type="text" name="buttonText" value={settings.buttonText || ''} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium"
-                    placeholder="Read More"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Button URL</label>
-                  <input 
-                    type="text" name="link" value={settings.link || ''} onChange={handleChange}
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium"
-                    placeholder="/about"
-                  />
-                </div>
-              </div>
+              <div><label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Text</label><textarea name="description" value={settings.description || ''} onChange={handleChange} rows={4} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-[#006044] outline-none resize-none" /></div>
             </>
           )}
 
           {/* ================= CATEGORIES & BLOG ================= */}
           {(section.type === "CATEGORIES" || section.type === "BLOG_SECTION") && (
-            <>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Section Headline</label>
-                <input 
-                  type="text" name="title" value={settings.title || ''} onChange={handleChange}
-                  className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-0 focus:border-[#006044] outline-none transition-colors"
-                  placeholder={section.type === "CATEGORIES" ? "Shop by Concern" : "The Journal"}
-                />
-              </div>
-              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-medium border border-blue-100">
-                The content for this section (the actual {section.type === "CATEGORIES" ? "Categories" : "Articles"}) is pulled dynamically from your database based on what is set as Active.
-              </div>
-            </>
-          )}
-
-          {/* ================= HERO & TRUST BADGES ================= */}
-          {(section.type === "HERO" || section.type === "TRUST_BADGES") && (
-             <div className="text-center py-12 text-gray-500 flex flex-col items-center">
-               <div className="bg-gray-100 p-4 rounded-full mb-4">
-                 <ImageIcon className="w-8 h-8 opacity-40" />
-               </div>
-               <p className="font-bold text-gray-900 mb-1">Globally Managed Section</p>
-               <p className="text-sm max-w-sm">
-                 This section is controlled by the global layout configuration and database active items. No specific section settings are required here.
-               </p>
-             </div>
+            <div><label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Section Title</label><input type="text" name="title" value={settings.title || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-[#006044] outline-none" placeholder="Shop by Concern" /></div>
           )}
 
         </div>
 
         {/* FOOTER ACTIONS */}
-        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-          <button 
-            onClick={onClose}
-            className="px-6 py-3 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSave}
-            className="px-8 py-3 text-sm font-bold text-white bg-gray-900 hover:bg-black rounded-xl transition-all shadow-lg shadow-gray-900/20 uppercase tracking-widest"
-          >
-            Apply Changes
-          </button>
+        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-6 py-3 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl">Cancel</button>
+          <button onClick={handleSave} className="px-8 py-3 text-sm font-bold text-white bg-gray-900 hover:bg-black rounded-xl shadow-lg shadow-gray-900/20 uppercase tracking-widest">Apply Changes</button>
         </div>
 
       </div>
