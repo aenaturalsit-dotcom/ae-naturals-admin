@@ -29,7 +29,7 @@ export default function EditProductPage() {
   const queryClient = useQueryClient();
   const [images, setImages] = useState<string[]>([]);
 
- const { data: existingHighlights } = useQuery({
+  const { data: existingHighlights } = useQuery({
     queryKey: ["product-highlights-edit", id],
     queryFn: async () => {
       const res = await apiClient.get(`/products/${id}/highlights`);
@@ -76,6 +76,7 @@ export default function EditProductPage() {
           storeId: product.storeId || "",
           ingredients: product.extra?.ingredients || product.ingredients || "",
           isActive: product.isActive ?? true,
+          isFeatured: product.isFeatured ?? false,
           // 🔥 Extract existing highlight IDs from the relational array
           highlightIds: existingHighlights?.map((h: any) => h.id) || [],
           // 🔥 NEW: Pre-fill shipping dimensions
@@ -146,6 +147,7 @@ export default function EditProductPage() {
 
       const payload = {
         ...formData,
+        isFeatured: formData.isFeatured,
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
         // 🔥 NEW: Parse shipping dimensions strictly
@@ -296,46 +298,58 @@ export default function EditProductPage() {
                     📦 Shipping Dimensions (Required for Logistics)
                   </label>
                   <p className="text-xs text-zinc-500 font-medium">
-                    These dimensions are required by Shiprocket to accurately calculate delivery charges and generate waybills.
+                    These dimensions are required by Shiprocket to accurately
+                    calculate delivery charges and generate waybills.
                   </p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Weight (KG) *</label>
-                    <input 
-                      {...register("shippingWeightKg", { required: true, min: 0.01 })} 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 0.5" 
-                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Weight (KG) *
+                    </label>
+                    <input
+                      {...register("shippingWeightKg", {
+                        required: true,
+                        min: 0.01,
+                      })}
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 0.5"
+                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Length (CM) *</label>
-                    <input 
-                      {...register("lengthCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 15" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Length (CM) *
+                    </label>
+                    <input
+                      {...register("lengthCm", { required: true, min: 1 })}
+                      type="number"
+                      placeholder="e.g. 15"
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Width (CM) *</label>
-                    <input 
-                      {...register("widthCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 10" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Width (CM) *
+                    </label>
+                    <input
+                      {...register("widthCm", { required: true, min: 1 })}
+                      type="number"
+                      placeholder="e.g. 10"
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Height (CM) *</label>
-                    <input 
-                      {...register("heightCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 5" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Height (CM) *
+                    </label>
+                    <input
+                      {...register("heightCm", { required: true, min: 1 })}
+                      type="number"
+                      placeholder="e.g. 5"
+                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
                     />
                   </div>
                 </div>
@@ -397,10 +411,8 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-
               {/* ✅ NEW SECTION: PRODUCT HIGHLIGHTS */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
-
                 <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                   <Sparkles size={18} className="text-[#006044]" /> Service
                   Highlights
@@ -467,6 +479,18 @@ export default function EditProductPage() {
                     Set Product Live
                   </span>
                 </label>
+                {/* 🔥 NEW: "Is Featured" Checkbox */}
+                  <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
+                    <input
+                      type="checkbox"
+                      {...register("isFeatured")}
+                      className="w-5 h-5 accent-[#006044]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Featured Product</span>
+                      <span className="text-[10px] text-zinc-400 font-bold mt-0.5">Show in Storefront Carousel</span>
+                    </div>
+                  </label>
               </div>
 
               {/* ✅ NEW SECTION: PRODUCT HIGHLIGHTS */}

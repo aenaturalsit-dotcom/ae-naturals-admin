@@ -1,4 +1,4 @@
-// src\app\admin\storefront\page.tsx
+// src/app/admin/storefront/page.tsx
 
 "use client";
 
@@ -25,11 +25,13 @@ import { SectionConfigPanel } from "./SectionConfigPanel";
 import HomeRenderer from "@/components/home/HomeRenderer";
 import { logger } from "@/utils/logger";
 
+// 🚨 UPDATED ARRAY: Added FEATURED_PRODUCTS and renamed CATEGORIES to COLLECTIONS
 const AVAILABLE_SECTIONS = [
   { type: "HERO", label: "Hero Banner" },
   { type: "TRUST_BADGES", label: "Trust Badges" },
-  { type: "CATEGORIES", label: "Category Grid" },
+  { type: "COLLECTIONS", label: "Collections Grid" }, // <-- Changed
   { type: "PRODUCT_CAROUSEL", label: "Product Carousel" },
+  { type: "FEATURED_PRODUCTS", label: "Featured Products" }, // <-- Added
   { type: "PROMO_BANNER", label: "Promotional Banner" },
   { type: "BRAND_STORY", label: "Brand Story" },
   { type: "BLOG_SECTION", label: "Journal / Blog" },
@@ -189,9 +191,7 @@ export default function StorefrontBuilderPage() {
 
         {/* PANE 2: Live Preview */}
         <div className="flex-1 bg-gray-100 p-4 md:p-8 flex justify-center overflow-hidden">
-          {/* We use h-full and flex-col so the browser window takes the available height */}
           <div className="w-full max-w-[480px] lg:max-w-[768px] xl:max-w-[1200px] bg-white rounded-b-3xl shadow-2xl h-full flex flex-col border border-gray-200 overflow-hidden ring-1 ring-gray-900/5">
-            {/* Browser Header Mock (Stays sticky at the top) */}
             <div className="h-8 bg-gray-100 border-b flex items-center px-4 gap-1.5 flex-shrink-0">
               <div className="w-3 h-3 rounded-full bg-red-400 shadow-sm border border-red-500/20"></div>
               <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm border border-amber-500/20"></div>

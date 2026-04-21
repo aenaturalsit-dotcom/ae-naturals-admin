@@ -48,6 +48,7 @@ export default function AddProductPage() {
       storeId: "",
       ingredients: "",
       isActive: true,
+      isFeatured: false,
       highlightIds: [] as string[], // <-- NEW: Added to track selected highlights
       careInstructions: [{ value: "" }],
       deliveryInfo: [{ value: "" }],
@@ -83,6 +84,7 @@ export default function AddProductPage() {
 
       const payload = {
         ...formData,
+        isFeatured: formData.isFeatured,
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
         images: images,
@@ -281,6 +283,14 @@ export default function AddProductPage() {
                   <input type="checkbox" {...register("isActive")} className="w-5 h-5 accent-[#006044]" />
                   <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Set Product Live</span>
                 </label>
+                {/* 🔥 NEW: "Is Featured" Checkbox */}
+                  <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
+                    <input type="checkbox" {...register("isFeatured")} className="w-5 h-5 accent-[#006044]" />
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Featured Product</span>
+                      <span className="text-[10px] text-zinc-400 font-bold mt-0.5">Show in Storefront Carousel</span>
+                    </div>
+                  </label>
               </div>
 
               {/* ✅ NEW SECTION: PRODUCT HIGHLIGHTS */}

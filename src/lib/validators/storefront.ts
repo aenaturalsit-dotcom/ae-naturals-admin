@@ -1,4 +1,4 @@
-// src\lib\validators\storefront.ts
+// src/lib/validators/storefront.ts
 
 import { z } from "zod";
 
@@ -7,14 +7,15 @@ export const ThemeSectionSchema = z.object({
   type: z.enum([
     "HERO",
     "TRUST_BADGES",
-    "CATEGORIES",
+    "COLLECTIONS",       // 🚨 Renamed from CATEGORIES
     "PRODUCT_CAROUSEL",
+    "FEATURED_PRODUCTS", // 🚨 Added
     "PROMO_BANNER",
     "BRAND_STORY",
     "BLOG_SECTION",
   ]),
   isActive: z.boolean().default(true),
-  settings: z.record(z.any()).default({}), // Can be strictly typed per block later
+  settings: z.record(z.string(), z.any()).default({}), // Can be strictly typed per block later
 });
 
 export const StorefrontLayoutSchema = z.object({

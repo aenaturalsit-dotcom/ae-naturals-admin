@@ -298,8 +298,8 @@ export function SectionEditModal({ isOpen, onClose, section, onSave }: Props) {
             </>
           )}
 
-          {/* ================= CATEGORIES & BLOG ================= */}
-          {(section.type === "CATEGORIES" || section.type === "BLOG_SECTION") && (
+          {/* ================= COLLECTIONS & BLOG ================= */}
+          {(section.type === "COLLECTIONS" || section.type === "BLOG_SECTION") && (
             <div><label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Section Title</label><input type="text" name="title" value={settings.title || ''} onChange={handleChange} className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-sm focus:border-[#006044] outline-none" placeholder="Shop by Concern" /></div>
           )}
 
