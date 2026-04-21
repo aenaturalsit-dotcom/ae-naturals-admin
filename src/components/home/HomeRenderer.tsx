@@ -11,10 +11,12 @@ import { TrustTicker } from "./TrustTicker";
 import { BrandStory } from "./BrandStory";
 import HomeBlogSection from "./HomeBlogSection";
 import { CollectionsShowcase } from "./CollectionsShowcase";
+import { FeaturedProducts } from "./FeaturedProducts";
 
 const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   HERO: HeroBanner,
   COLLECTIONS: CollectionsShowcase,
+  FEATURED_PRODUCTS: FeaturedProducts,
   PRODUCT_CAROUSEL: ProductCarousel,
   PROMO_BANNER: PromotionalBanner,
   TRUST_BADGES: TrustTicker,
@@ -82,16 +84,41 @@ export default function HomeRenderer({
 // Inside src/components/home/HomeRenderer.tsx
 
 function resolveData(section: any, data: any) {
+  const settings = section.settings || {};
+  const sourceKey = settings.dataSource;
+
+  // This 'data' object is exactly what you sent me in the JSON
   switch (section.type) {
-    case 'PRODUCT_CAROUSEL':
     case 'FEATURED_PRODUCTS':
-      return data[section.settings?.dataSource] || [];
-    case 'COLLECTIONS': // 🚨 REPLACED CATEGORIES WITH COLLECTIONS
-      return null; 
+      // Look specifically for the "featuredProducts" key from your JSON
+      return data?.featuredProducts || [];
+
+    case 'PRODUCT_CAROUSEL':
+      // 1. If it's a dynamic collection (e.g. "collection_summer-sale")
+      if (sourceKey?.startsWith('collection_')) {
+        const slug = sourceKey.replace('collection_', '');
+        const target = data.collections?.find((c: any) => c.slug === slug);
+        
+        // Unwrap join-table mapping if it exists
+        return target?.products?.map((p: any) => p.product || p) || [];
+      }
+      
+      // 2. Fallback to standard data keys (e.g. "featuredProducts")
+      return data[sourceKey] || [];
+      
+    case 'COLLECTIONS':
+      // This is for the grid of collection circles, it uses the whole collections array
+      return data?.collections || [];
+
     case 'BLOG_SECTION':
-      return data.blogs || [];
+      // Look specifically for the "blogs" key from your JSON
+      return data?.blogs || [];
+
     case 'HERO':
-      return data.banners || []; 
+    case 'PROMO_BANNER':
+      // Currently your JSON shows banners as [], so this will be empty for now
+      return data?.banners || [];
+
     default:
       return null;
   }
