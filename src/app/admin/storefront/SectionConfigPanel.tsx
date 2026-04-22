@@ -146,7 +146,7 @@ export function SectionConfigPanel() {
         )}
 
         {/* IMAGE UPLOAD */}
-        {["HERO", "PROMO_BANNER", "BRAND_STORY"].includes(
+        {[ "PROMO_BANNER", "BRAND_STORY"].includes(
           activeSection.type,
         ) && (
           <div className="space-y-3 pt-2">
@@ -203,6 +203,80 @@ export function SectionConfigPanel() {
             </div>
           </div>
         )}
+
+{/* MULTI-IMAGE CAROUSEL UPLOAD (Only for HERO) */}
+        {activeSection.type === "HERO" && (
+          <div className="space-y-4 pt-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">
+              <span>Hero Slides (Multi-Image)</span>
+              <span className="bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full">
+                {(activeSection.settings.banners as any[])?.length || 0} Slides
+              </span>
+            </label>
+
+            {/* List existing slides */}
+            <div className="space-y-3">
+              {((activeSection.settings.banners as any[]) || []).map((slide, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                  <img src={slide.imageUrl} alt={`Slide ${index}`} className="w-16 h-12 object-cover rounded-lg border border-zinc-200" />
+                  <div className="flex-1 space-y-1">
+                    <input 
+                      type="text" 
+                      placeholder="Redirect Link (e.g. /collections/summer)" 
+                      value={slide.link || ""}
+                      onChange={(e) => {
+                        const newBanners = [...(activeSection.settings.banners as any[])];
+                        newBanners[index].link = e.target.value;
+                        updateSectionSettings(activeSection.id, { banners: newBanners });
+                      }}
+                      className="w-full text-xs p-2 border border-zinc-200 rounded-lg outline-none focus:border-[#006044]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newBanners = (activeSection.settings.banners as any[]).filter((_, i) => i !== index);
+                      updateSectionSettings(activeSection.id, { banners: newBanners });
+                    }}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Upload New Slide Button */}
+            <CldUploadWidget
+              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+              onSuccess={(result: any) => {
+                if (result.event === "success") {
+                  const currentBanners = (activeSection.settings.banners as any[]) || [];
+                  updateSectionSettings(activeSection.id, { 
+                    banners: [...currentBanners, { imageUrl: result.info.secure_url, link: "" }] 
+                  });
+                }
+              }}
+            >
+              {({ open }) => (
+                <button
+                  type="button"
+                  onClick={() => open()}
+                  className="w-full py-4 border-2 border-dashed border-[#006044]/30 rounded-2xl flex items-center justify-center gap-2 text-[#006044] font-bold text-xs hover:bg-[#006044]/5 transition-all"
+                >
+                  <Upload size={16} /> Add New Slide
+                </button>
+              )}
+            </CldUploadWidget>
+          </div>
+        )}
+
+
+
+
+
+
+
         {/* BRAND STORY CONFIGURATION */}
         {activeSection.type === "BRAND_STORY" && (
           <div className="space-y-6">
