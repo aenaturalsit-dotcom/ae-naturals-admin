@@ -41,27 +41,62 @@ export default function TrustBadgeSelector({ selectedIds = [], onChange }: Props
       
       <div className="grid grid-cols-2 gap-2">
         {Array.isArray(masterFeatures) && masterFeatures.map((feature: any) => {
-          const IconComponent = (LucideIcons as any)[feature.icon] || LucideIcons.HelpCircle;
-          const isSelected = selectedIds.includes(feature.id);
+  // 1. SMART ICON RESOLVER (Fixes the question mark issue)
+  let IconComponent = (LucideIcons as any)[feature.icon];
 
-          return (
-            <button
-              key={feature.id}
-              type="button"
-              onClick={() => toggleBadge(feature.id)}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                isSelected 
-                  ? 'bg-green-50 border-[#006044] text-[#006044]' 
-                  : 'bg-white border-zinc-100 text-zinc-500 hover:border-zinc-200'
-              }`}
-            >
-              <IconComponent size={18} strokeWidth={isSelected ? 3 : 2} />
-              <span className="text-[11px] font-black uppercase tracking-tight leading-none">
-                {feature.title}
-              </span>
-            </button>
-          );
-        })}
+  if (!IconComponent && feature.icon) {
+    const pascalCaseName = feature.icon
+      .split("-")
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("");
+    IconComponent = (LucideIcons as any)[pascalCaseName];
+  }
+
+  // Fallback to HelpCircle only if all lookups fail
+  IconComponent = IconComponent || LucideIcons.HelpCircle;
+  
+  const isSelected = selectedIds.includes(feature.id);
+  const badgeColor = feature.color || "#006044";
+
+  return (
+    <button
+      key={feature.id}
+      type="button"
+      onClick={() => toggleBadge(feature.id)}
+      className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all text-center min-h-[110px] ${
+        isSelected 
+          ? 'bg-white border-[#006044] shadow-md scale-[1.02]' 
+          : 'bg-zinc-50 border-transparent text-zinc-400 hover:border-zinc-200'
+      }`}
+    >
+      {/* 2. CIRCULAR HIGHLIGHT (Matches your image design) */}
+      <div 
+        className="w-12 h-12 flex items-center justify-center rounded-full transition-colors"
+        style={{ 
+          backgroundColor: isSelected ? `${badgeColor}15` : '#e4e4e7', 
+          color: isSelected ? badgeColor : '#a1a1aa' 
+        }}
+      >
+        <IconComponent size={20} strokeWidth={isSelected ? 2.5 : 2} />
+      </div>
+
+      <span className={`text-[10px] font-black uppercase tracking-widest leading-tight ${
+        isSelected ? 'text-zinc-900' : 'text-zinc-400'
+      }`}>
+        {feature.title}
+      </span>
+
+      {/* Selection Indicator */}
+      {isSelected && (
+        <div className="absolute top-2 right-2">
+          <div className="bg-[#006044] rounded-full p-0.5">
+            <LucideIcons.Check size={10} className="text-white" strokeWidth={4} />
+          </div>
+        </div>
+      )}
+    </button>
+  );
+})}
       </div>
     </div>
   );

@@ -212,7 +212,7 @@ export function SectionConfigPanel() {
               </label>
               <textarea
                 className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white focus:ring-2 focus:ring-[#006044]"
-                value={activeSection.settings.description as string || ""}
+                value={(activeSection.settings.description as string) || ""}
                 onChange={(e) =>
                   updateSectionSettings(activeSection.id, {
                     description: e.target.value,
@@ -230,7 +230,7 @@ export function SectionConfigPanel() {
                 <input
                   type="text"
                   className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-                  value={activeSection.settings.buttonText as string || ""}
+                  value={(activeSection.settings.buttonText as string) || ""}
                   onChange={(e) =>
                     updateSectionSettings(activeSection.id, {
                       buttonText: e.target.value,
@@ -245,7 +245,7 @@ export function SectionConfigPanel() {
                 <input
                   type="text"
                   className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-                  value={activeSection.settings.buttonLink as string || ""}
+                  value={(activeSection.settings.buttonLink as string) || ""}
                   onChange={(e) =>
                     updateSectionSettings(activeSection.id, {
                       buttonLink: e.target.value,
@@ -289,7 +289,9 @@ export function SectionConfigPanel() {
         {activeSection.type === "TRUST_BADGES" && (
           <div className="pt-4">
             <TrustBadgeSelector
-              selectedIds={activeSection.settings.selectedIds as string[] || []}
+              selectedIds={
+                (activeSection.settings.selectedIds as string[]) || []
+              }
               onChange={(ids) =>
                 updateSectionSettings(activeSection.id, { selectedIds: ids })
               }
@@ -308,7 +310,7 @@ export function SectionConfigPanel() {
             <div className="relative">
               <select
                 className="w-full p-4 pr-10 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white focus:ring-2 focus:ring-[#006044] transition-all cursor-pointer appearance-none"
-                value={activeSection.settings.dataSource as string || ""}
+                value={(activeSection.settings.dataSource as string) || ""}
                 onChange={(e) =>
                   updateSectionSettings(activeSection.id, {
                     dataSource: e.target.value,
@@ -349,13 +351,28 @@ export function SectionConfigPanel() {
             <p className="text-[10px] font-bold text-zinc-400 mt-1">
               Select which database array feeds this block.
             </p>
+            {/* SHOW HIGHLIGHTS TOGGLE */}
+            <div className="pt-4 mt-4 border-t border-zinc-100 flex items-center justify-between">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest cursor-pointer">
+                Show Product Badges
+              </label>
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-[#006044] cursor-pointer"
+                checked={!!activeSection.settings.showHighlights}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    showHighlights: e.target.checked,
+                  })
+                }
+              />
+            </div>
           </div>
         )}
 
         {/* BLOG SECTION CONFIGURATION */}
         {activeSection.type === "BLOG_SECTION" && (
           <div className="space-y-6 pt-4 border-t border-zinc-100">
-           
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 View All Link
@@ -363,7 +380,7 @@ export function SectionConfigPanel() {
               <input
                 type="text"
                 className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-                value={activeSection.settings.viewAllLink as string || ""}
+                value={(activeSection.settings.viewAllLink as string) || ""}
                 onChange={(e) =>
                   updateSectionSettings(activeSection.id, {
                     viewAllLink: e.target.value,
