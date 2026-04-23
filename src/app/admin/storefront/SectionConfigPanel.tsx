@@ -64,6 +64,13 @@ export function SectionConfigPanel() {
 
   const safeCollections = collections || [];
 
+  const IMAGE_GUIDELINES = {
+    HERO: "1920×800px • 16:9 • Max 500KB • WebP preferred",
+    PROMO_BANNER: "1200×500px • 12:5 • Max 300KB • WebP/JPG",
+    BRAND_STORY: "800×600px • 4:3 • Max 300KB • WebP/JPG",
+    BLOG_SECTION: "1200×630px • 1.91:1 • Max 300KB • WebP/JPG",
+    PRODUCT: "800×800px • 1:1 • Max 200KB • WebP",
+  };
   return (
     <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300">
       <div>
@@ -146,9 +153,7 @@ export function SectionConfigPanel() {
         )}
 
         {/* IMAGE UPLOAD */}
-        {[ "PROMO_BANNER", "BRAND_STORY"].includes(
-          activeSection.type,
-        ) && (
+        {["PROMO_BANNER", "BRAND_STORY"].includes(activeSection.type) && (
           <div className="space-y-3 pt-2">
             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
               Banner Image *
@@ -180,6 +185,12 @@ export function SectionConfigPanel() {
                   }
                   onSuccess={(result: any) => {
                     if (result.event === "success") {
+                      const fileSizeKB = result.info.bytes / 1024;
+
+                      if (fileSizeKB > 500) {
+                        alert("Image too large. Please upload under 500KB.");
+                        return;
+                      }
                       updateSectionSettings(activeSection.id, {
                         imageUrl: result.info.secure_url,
                       });
@@ -201,63 +212,72 @@ export function SectionConfigPanel() {
                 </CldUploadWidget>
               )}
             </div>
+            {/* 👇 ADD THIS */}
+            <p className="mt-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold">
+              ⚠ Recommended:{" "}
+              <span className="font-bold">
+                {
+                  IMAGE_GUIDELINES[
+                    activeSection.type as keyof typeof IMAGE_GUIDELINES
+                  ]
+                }
+              </span>
+            </p>
           </div>
         )}
-{activeSection.type === "PROMO_BANNER" && (
-  <div className="space-y-4 pt-4 border-t border-zinc-100">
-    
-    <div className="space-y-2">
-      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-        Button Text
-      </label>
-      <input
-        type="text"
-        placeholder="e.g. Shop Now"
-        className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-        value={(activeSection.settings.buttonText as string) || ""}
-        onChange={(e) =>
-          updateSectionSettings(activeSection.id, {
-            buttonText: e.target.value,
-          })
-        }
-      />
-    </div>
-<div className="space-y-2">
-  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-    Subtitle
-  </label>
-  <input
-    type="text"
-    placeholder="e.g. Limited time deal. Don’t miss out."
-    className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white"
-    value={(activeSection.settings.subtitle as string) || ""}
-    onChange={(e) =>
-      updateSectionSettings(activeSection.id, {
-        subtitle: e.target.value,
-      })
-    }
-  />
-</div>
-    <div className="space-y-2">
-      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-        Button Link
-      </label>
-      <input
-        type="text"
-        placeholder="/collections/all"
-        className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-        value={(activeSection.settings.buttonLink as string) || ""}
-        onChange={(e) =>
-          updateSectionSettings(activeSection.id, {
-            buttonLink: e.target.value,
-          })
-        }
-      />
-    </div>
-
-  </div>
-)}
-{/* MULTI-IMAGE CAROUSEL UPLOAD (Only for HERO) */}
+        {activeSection.type === "PROMO_BANNER" && (
+          <div className="space-y-4 pt-4 border-t border-zinc-100">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Button Text
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Shop Now"
+                className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
+                value={(activeSection.settings.buttonText as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    buttonText: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Subtitle
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Limited time deal. Don’t miss out."
+                className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white"
+                value={(activeSection.settings.subtitle as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    subtitle: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Button Link
+              </label>
+              <input
+                type="text"
+                placeholder="/collections/all"
+                className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
+                value={(activeSection.settings.buttonLink as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    buttonLink: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+        {/* MULTI-IMAGE CAROUSEL UPLOAD (Only for HERO) */}
         {activeSection.type === "HERO" && (
           <div className="space-y-4 pt-2">
             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">
@@ -269,34 +289,51 @@ export function SectionConfigPanel() {
 
             {/* List existing slides */}
             <div className="space-y-3">
-              {((activeSection.settings.banners as any[]) || []).map((slide, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 bg-zinc-50 border border-zinc-200 rounded-2xl">
-                  <img src={slide.imageUrl} alt={`Slide ${index}`} className="w-16 h-12 object-cover rounded-lg border border-zinc-200" />
-                  <div className="flex-1 space-y-1">
-                    <input 
-                      type="text" 
-                      placeholder="Redirect Link (e.g. /collections/summer)" 
-                      value={slide.link || ""}
-                      onChange={(e) => {
-                        const newBanners = [...(activeSection.settings.banners as any[])];
-                        newBanners[index].link = e.target.value;
-                        updateSectionSettings(activeSection.id, { banners: newBanners });
-                      }}
-                      className="w-full text-xs p-2 border border-zinc-200 rounded-lg outline-none focus:border-[#006044]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newBanners = (activeSection.settings.banners as any[]).filter((_, i) => i !== index);
-                      updateSectionSettings(activeSection.id, { banners: newBanners });
-                    }}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+              {((activeSection.settings.banners as any[]) || []).map(
+                (slide, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-4 p-3 bg-zinc-50 border border-zinc-200 rounded-2xl"
                   >
-                    <X size={16} strokeWidth={3} />
-                  </button>
-                </div>
-              ))}
+                    <img
+                      src={slide.imageUrl}
+                      alt={`Slide ${index}`}
+                      className="w-16 h-12 object-cover rounded-lg border border-zinc-200"
+                    />
+                    <div className="flex-1 space-y-1">
+                      <input
+                        type="text"
+                        placeholder="Redirect Link (e.g. /collections/summer)"
+                        value={slide.link || ""}
+                        onChange={(e) => {
+                          const newBanners = [
+                            ...(activeSection.settings.banners as any[]),
+                          ];
+                          newBanners[index].link = e.target.value;
+                          updateSectionSettings(activeSection.id, {
+                            banners: newBanners,
+                          });
+                        }}
+                        className="w-full text-xs p-2 border border-zinc-200 rounded-lg outline-none focus:border-[#006044]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newBanners = (
+                          activeSection.settings.banners as any[]
+                        ).filter((_, i) => i !== index);
+                        updateSectionSettings(activeSection.id, {
+                          banners: newBanners,
+                        });
+                      }}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <X size={16} strokeWidth={3} />
+                    </button>
+                  </div>
+                ),
+              )}
             </div>
 
             {/* Upload New Slide Button */}
@@ -304,9 +341,19 @@ export function SectionConfigPanel() {
               uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
               onSuccess={(result: any) => {
                 if (result.event === "success") {
-                  const currentBanners = (activeSection.settings.banners as any[]) || [];
-                  updateSectionSettings(activeSection.id, { 
-                    banners: [...currentBanners, { imageUrl: result.info.secure_url, link: "" }] 
+                  const fileSizeKB = result.info.bytes / 1024;
+
+                  if (fileSizeKB > 500) {
+                    alert("Image too large. Please upload under 500KB.");
+                    return;
+                  }
+                  const currentBanners =
+                    (activeSection.settings.banners as any[]) || [];
+                  updateSectionSettings(activeSection.id, {
+                    banners: [
+                      ...currentBanners,
+                      { imageUrl: result.info.secure_url, link: "" },
+                    ],
                   });
                 }
               }}
@@ -321,14 +368,19 @@ export function SectionConfigPanel() {
                 </button>
               )}
             </CldUploadWidget>
+            {/* 👇 ADD THIS */}
+            <p className="mt-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold">
+              ⚠ Recommended:{" "}
+              <span className="font-bold">
+                {
+                  IMAGE_GUIDELINES[
+                    activeSection.type as keyof typeof IMAGE_GUIDELINES
+                  ]
+                }
+              </span>
+            </p>
           </div>
         )}
-
-
-
-
-
-
 
         {/* BRAND STORY CONFIGURATION */}
         {activeSection.type === "BRAND_STORY" && (
@@ -500,23 +552,22 @@ export function SectionConfigPanel() {
         {/* BLOG SECTION CONFIGURATION */}
         {activeSection.type === "BLOG_SECTION" && (
           <div className="space-y-6 pt-4 border-t border-zinc-100">
-            
-<div className="space-y-2">
-  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-    Subtitle
-  </label>
-  <input
-    type="text"
-    placeholder="e.g. Expert tips, ingredient science, and beauty insights"
-    className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white focus:ring-2 focus:ring-[#006044]"
-    value={(activeSection.settings.subtitle as string) || ""}
-    onChange={(e) =>
-      updateSectionSettings(activeSection.id, {
-        subtitle: e.target.value,
-      })
-    }
-  />
-</div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Subtitle
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Expert tips, ingredient science, and beauty insights"
+                className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white focus:ring-2 focus:ring-[#006044]"
+                value={(activeSection.settings.subtitle as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    subtitle: e.target.value,
+                  })
+                }
+              />
+            </div>
             {/* Using the standard Data Source Input we built earlier for 'blogs' key */}
           </div>
         )}
