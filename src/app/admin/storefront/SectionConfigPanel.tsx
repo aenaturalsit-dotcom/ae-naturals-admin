@@ -203,8 +203,6 @@ export function SectionConfigPanel() {
             </div>
           </div>
         )}
-
-
 {activeSection.type === "PROMO_BANNER" && (
   <div className="space-y-4 pt-4 border-t border-zinc-100">
     
@@ -224,7 +222,22 @@ export function SectionConfigPanel() {
         }
       />
     </div>
-
+<div className="space-y-2">
+  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+    Subtitle
+  </label>
+  <input
+    type="text"
+    placeholder="e.g. Limited time deal. Don’t miss out."
+    className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white"
+    value={(activeSection.settings.subtitle as string) || ""}
+    onChange={(e) =>
+      updateSectionSettings(activeSection.id, {
+        subtitle: e.target.value,
+      })
+    }
+  />
+</div>
     <div className="space-y-2">
       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
         Button Link
