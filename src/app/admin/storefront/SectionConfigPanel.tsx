@@ -500,23 +500,23 @@ export function SectionConfigPanel() {
         {/* BLOG SECTION CONFIGURATION */}
         {activeSection.type === "BLOG_SECTION" && (
           <div className="space-y-6 pt-4 border-t border-zinc-100">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                View All Link
-              </label>
-              <input
-                type="text"
-                className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-bold text-sm bg-white"
-                value={(activeSection.settings.viewAllLink as string) || ""}
-                onChange={(e) =>
-                  updateSectionSettings(activeSection.id, {
-                    viewAllLink: e.target.value,
-                  })
-                }
-                placeholder="/blog"
-              />
-            </div>
-
+            
+<div className="space-y-2">
+  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+    Subtitle
+  </label>
+  <input
+    type="text"
+    placeholder="e.g. Expert tips, ingredient science, and beauty insights"
+    className="w-full p-4 border border-zinc-200 rounded-2xl outline-none font-medium text-sm bg-white focus:ring-2 focus:ring-[#006044]"
+    value={(activeSection.settings.subtitle as string) || ""}
+    onChange={(e) =>
+      updateSectionSettings(activeSection.id, {
+        subtitle: e.target.value,
+      })
+    }
+  />
+</div>
             {/* Using the standard Data Source Input we built earlier for 'blogs' key */}
           </div>
         )}
