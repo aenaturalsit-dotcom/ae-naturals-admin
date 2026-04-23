@@ -6,8 +6,9 @@ import * as LucideIcons from 'lucide-react';
 import { Sparkles, Edit2, Trash2, ArrowUp, ArrowDown, Plus, Loader2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import apiClient from '@/lib/api-client';
+import toast from 'react-hot-toast'; // 👈 Replace with 'sonner' if you use sonner instead
 
-// --- SMART ICON RESOLVER (Same as Storefront) ---
+// --- SMART ICON RESOLVER ---
 const DynamicIcon = ({ name, color, size = 20 }: { name: string; color?: string; size?: number }) => {
   if (!name) return <LucideIcons.CheckCircle size={size} color={color || "currentColor"} />;
 
@@ -28,7 +29,7 @@ const DynamicIcon = ({ name, color, size = 20 }: { name: string; color?: string;
 export default function FeaturesManagerPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingFeature, setEditingFeature] = useState<any>(null); // Tracks if we are editing
+  const [editingFeature, setEditingFeature] = useState<any>(null);
 
   // --- FETCH FEATURES ---
   const { data: features = [], isLoading } = useQuery({
@@ -39,6 +40,7 @@ export default function FeaturesManagerPage() {
         return Array.isArray(response) ? response : response?.data || []; 
       } catch (error) {
         console.error("Failed to fetch features:", error);
+        toast.error("Failed to load features"); // 👈 Added Toast
         return []; 
       }
     }, 
@@ -64,6 +66,7 @@ export default function FeaturesManagerPage() {
       return { previousFeatures };
     },
     onError: (err, newOrder, context) => {
+      toast.error("Failed to reorder features"); // 👈 Added Toast
       queryClient.setQueryData(['admin-features'], context?.previousFeatures);
     },
     onSettled: () => {
@@ -92,7 +95,11 @@ export default function FeaturesManagerPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/features/${id}`),
     onSuccess: () => {
+      toast.success("Feature removed successfully"); // 👈 Added Toast
       queryClient.invalidateQueries({ queryKey: ['admin-features'] });
+    },
+    onError: () => {
+      toast.error("Failed to delete feature"); // 👈 Added Toast
     }
   });
 
@@ -148,17 +155,21 @@ export default function FeaturesManagerPage() {
                   
                   {/* DYNAMIC ICON WITH COLOR */}
                   <div 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
-                    style={{ backgroundColor: `${feature.color || '#16a34a'}20` }} // 20% opacity background
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0 transition-colors"
+                    style={{ backgroundColor: `${feature.color || '#16a34a'}20` }}
                   >
                     <DynamicIcon name={feature.icon} color={feature.color || '#16a34a'} size={24} />
                   </div>
                   
                   <div>
                     <h3 className="font-bold text-zinc-800 text-lg">{feature.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded text-zinc-500">Lucide: {feature.icon}</span>
-                      <span className="text-xs font-mono bg-zinc-100 px-2 py-0.5 rounded text-zinc-500 flex items-center gap-1">
+                    {/* NEW: Description rendering in the list */}
+                    {feature.description && (
+                      <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1 max-w-md">{feature.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[10px] font-mono bg-zinc-100 px-2 py-0.5 rounded text-zinc-500">Lucide: {feature.icon}</span>
+                      <span className="text-[10px] font-mono bg-zinc-100 px-2 py-0.5 rounded text-zinc-500 flex items-center gap-1">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: feature.color || '#16a34a' }} />
                         {feature.color || '#16a34a'}
                       </span>
@@ -206,15 +217,16 @@ function FeatureModal({ editData, onClose }: { editData?: any, onClose: () => vo
   const queryClient = useQueryClient();
   const isEditing = !!editData;
 
-  // React Hook Form pre-filled with editData if it exists
-  const { register, handleSubmit, watch,setValue } = useForm({
+  const { register, handleSubmit, watch, setValue } = useForm({
     values: isEditing ? {
       title: editData.title,
+      description: editData.description || "",
       icon: editData.icon,
       color: editData.color || '#16a34a',
       isActive: editData.isActive
     } : {
       title: "",
+      description: "",
       icon: "",
       color: "#16a34a",
       isActive: true
@@ -226,15 +238,18 @@ function FeatureModal({ editData, onClose }: { editData?: any, onClose: () => vo
 
   const mutation = useMutation({
     mutationFn: (data: any) => {
-      // If editing, use PATCH. If new, use POST.
       if (isEditing) {
         return apiClient.patch(`/admin/features/${editData.id}`, data);
       }
       return apiClient.post('/admin/features', data);
     },
     onSuccess: () => {
+      toast.success(isEditing ? "Highlight updated successfully!" : "Highlight created successfully!"); // 👈 Added Toast
       queryClient.invalidateQueries({ queryKey: ['admin-features'] });
       onClose();
+    },
+    onError: () => {
+      toast.error("Failed to save highlight"); // 👈 Added Toast
     }
   });
 
@@ -245,17 +260,17 @@ function FeatureModal({ editData, onClose }: { editData?: any, onClose: () => vo
           <h2 className="text-lg font-black text-zinc-800 uppercase tracking-tight">
             {isEditing ? "Edit Highlight" : "New Highlight"}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-200 rounded-full transition-colors"><X size={20} /></button>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-zinc-200 rounded-full transition-colors"><X size={20} /></button>
         </div>
         
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="p-6 space-y-4">
           
           {/* Live Preview Bubble */}
-          <div className="flex items-center justify-center py-4">
+          <div className="flex items-center justify-center py-2">
             <div className="flex flex-col items-center space-y-2">
               <div 
                 className="w-16 h-16 rounded-full flex items-center justify-center shadow-sm transition-colors duration-300"
-                style={{ backgroundColor: `${selectedColor}20` }} // 20% opacity hex
+                style={{ backgroundColor: `${selectedColor}20` }}
               >
                 <DynamicIcon name={selectedIcon} color={selectedColor} size={28} />
               </div>
@@ -267,12 +282,23 @@ function FeatureModal({ editData, onClose }: { editData?: any, onClose: () => vo
             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Display Title</label>
             <input {...register("title", { required: true })} placeholder="e.g. 100% Organic" className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-sm bg-white" />
           </div>
+
+          {/* Description text area */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Description (Optional)</label>
+            <textarea 
+              {...register("description")} 
+              placeholder="e.g. Crafted without synthetic pesticides or fertilizers." 
+              className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-medium text-sm bg-white resize-none custom-scrollbar" 
+              rows={2}
+            />
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between">
                 Lucide Icon 
-                <a href="https://lucide.dev/icons" target="_blank" className="text-blue-500 hover:underline">Find &rarr;</a>
+                <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">Find &rarr;</a>
               </label>
               <input {...register("icon", { required: true })} placeholder="e.g. Truck" className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-sm bg-white" />
             </div>
