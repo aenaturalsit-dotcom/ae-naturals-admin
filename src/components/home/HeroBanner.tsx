@@ -136,7 +136,7 @@ export const HeroBanner = ({ data = [], settings }: HeroBannerProps) => {
           <button
             onClick={goToPrev}
             aria-label="Previous slide"
-            className="hidden sm:flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 z-20 
+            className="hidden sm:flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 z-10 
               h-10 w-10 rounded-full bg-white/80 backdrop-blur 
               shadow-md hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-black/40"
           >
@@ -146,7 +146,7 @@ export const HeroBanner = ({ data = [], settings }: HeroBannerProps) => {
           <button
             onClick={goToNext}
             aria-label="Next slide"
-            className="hidden sm:flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 z-20 
+            className="hidden sm:flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 z-10 
               h-10 w-10 rounded-full bg-white/80 backdrop-blur 
               shadow-md hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-black/40"
           >
@@ -155,7 +155,7 @@ export const HeroBanner = ({ data = [], settings }: HeroBannerProps) => {
 
           {/* Dots */}
           <div
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
             role="tablist"
             aria-label="Slide navigation"
           >

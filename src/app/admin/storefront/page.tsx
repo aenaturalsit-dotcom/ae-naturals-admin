@@ -24,6 +24,7 @@ import { SortableSectionItem } from "./SortableSectionItem";
 import { SectionConfigPanel } from "./SectionConfigPanel";
 import HomeRenderer from "@/components/home/HomeRenderer";
 import { logger } from "@/utils/logger";
+import toast from "react-hot-toast";
 
 // 🚨 UPDATED ARRAY: Added FEATURED_PRODUCTS and renamed CATEGORIES to COLLECTIONS
 const AVAILABLE_SECTIONS = [
@@ -35,6 +36,7 @@ const AVAILABLE_SECTIONS = [
   { type: "PROMO_BANNER", label: "Promotional Banner" },
   { type: "BRAND_STORY", label: "Brand Story" },
   { type: "BLOG_SECTION", label: "Journal / Blog" },
+  { type: "VIDEO_SHOPPABLE", label: "Video + Products" },
 ];
 
 export default function StorefrontBuilderPage() {
@@ -92,11 +94,11 @@ export default function StorefrontBuilderPage() {
       logger.log("Layout saved successfully");
       queryClient.invalidateQueries({ queryKey: ["store-home-config"] });
       store.resetDirty();
-      alert("Layout published successfully!");
+      toast.success("Layout published successfully 🚀");
     },
     onError: (err) => {
       logger.error("Failed to save layout", err);
-      alert("Failed to save layout.");
+      toast.error("Failed to save layout. Please try again.");
     },
   });
 

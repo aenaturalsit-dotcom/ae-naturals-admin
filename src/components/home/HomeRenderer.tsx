@@ -9,9 +9,10 @@ import { ProductCarousel } from "./ProductCarousel";
 import { PromotionalBanner } from "./PromotionalBanner";
 import { TrustTicker } from "./TrustTicker";
 import { BrandStory } from "./BrandStory";
-import {HomeBlogSection} from "./HomeBlogSection";
+import { HomeBlogSection } from "./HomeBlogSection";
 import { CollectionsShowcase } from "./CollectionsShowcase";
 import { FeaturedProducts } from "./FeaturedProducts";
+import { VideoShoppableSection } from "./VideoShoppableSection";
 
 const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   HERO: HeroBanner,
@@ -22,6 +23,7 @@ const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   TRUST_BADGES: TrustTicker,
   BRAND_STORY: BrandStory,
   BLOG_SECTION: HomeBlogSection,
+  VIDEO_SHOPPABLE: VideoShoppableSection,
 };
 
 interface HomeRendererProps {
@@ -89,35 +91,38 @@ function resolveData(section: any, data: any) {
 
   // This 'data' object is exactly what you sent me in the JSON
   switch (section.type) {
-    case 'FEATURED_PRODUCTS':
+    case "FEATURED_PRODUCTS":
       // Look specifically for the "featuredProducts" key from your JSON
       return data?.featuredProducts || [];
 
-    case 'PRODUCT_CAROUSEL':
+    case "PRODUCT_CAROUSEL":
       // 1. If it's a dynamic collection (e.g. "collection_summer-sale")
-      if (sourceKey?.startsWith('collection_')) {
-        const slug = sourceKey.replace('collection_', '');
+      if (sourceKey?.startsWith("collection_")) {
+        const slug = sourceKey.replace("collection_", "");
         const target = data.collections?.find((c: any) => c.slug === slug);
-        
+
         // Unwrap join-table mapping if it exists
         return target?.products?.map((p: any) => p.product || p) || [];
       }
-      
+
       // 2. Fallback to standard data keys (e.g. "featuredProducts")
       return data[sourceKey] || [];
-      
-    case 'COLLECTIONS':
+
+    case "COLLECTIONS":
       // This is for the grid of collection circles, it uses the whole collections array
       return data?.collections || [];
 
-    case 'BLOG_SECTION':
+    case "BLOG_SECTION":
       // Look specifically for the "blogs" key from your JSON
       return data?.blogs || [];
 
-    case 'HERO':
-    case 'PROMO_BANNER':
+    case "HERO":
+    case "PROMO_BANNER":
       // Currently your JSON shows banners as [], so this will be empty for now
       return data?.banners || [];
+    case "VIDEO_SHOPPABLE":
+      // The video data is stored directly in the admin block settings now!
+      return settings.slides || [];
 
     default:
       return null;
