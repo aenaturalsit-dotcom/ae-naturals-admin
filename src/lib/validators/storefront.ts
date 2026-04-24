@@ -13,6 +13,7 @@ export const ThemeSectionSchema = z.object({
     "PROMO_BANNER",
     "BRAND_STORY",
     "BLOG_SECTION",
+    "VIDEO_SHOPPABLE",   // 🚨 Added
   ]),
   isActive: z.boolean().default(true),
   settings: z.record(z.string(), z.any()).default({}), // Can be strictly typed per block later
