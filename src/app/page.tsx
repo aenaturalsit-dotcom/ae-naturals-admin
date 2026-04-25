@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
 const exitUrl =
-    process.env.NEXT_PUBLIC_NEXTAUTH_URL || "http://localhost:3000";
+    process.env.NEXT_PUBLIC_EXIT_URL || "http://localhost:3000";
 
 
     return (
