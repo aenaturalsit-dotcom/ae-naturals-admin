@@ -1,7 +1,18 @@
-GOOGLE_CLIENT_ID=yegfyewufewytfugiufew
-GOOGLE_CLIENT_SECRET=dcghwbejdhekhwufwejgguewu
+GOOGLE_CLIENT_ID=.apps.googleusercontent.com
+
+GOOGLE_CLIENT_SECRET=brjfvkjndvlk-
+
+
+
+# do not change key name for nextauth, otherwise it will not work
+NEXTAUTH_SECRET=your_ultra_secure_random_string_here
 NEXTAUTH_URL=http://localhost:3000
-NEXT_PUBLIC_NEXTAUTH_SECRET=your_ultra_secure_random_string_here
+
+
+NEXT_PUBLIC_EXIT_URL=http://localhost:3005
 NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=cjwkfwer
-NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=kbzhcvsas
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=rrjfdhjknk,jvre
+
+
+
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=flbhbjhhbjkdfj
