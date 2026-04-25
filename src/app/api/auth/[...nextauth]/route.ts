@@ -67,7 +67,7 @@ async signIn({ user, account }: any) {
     },
   },
   pages: { signIn: "/admin/login" },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

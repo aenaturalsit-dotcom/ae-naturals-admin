@@ -96,7 +96,7 @@ cd flower-fairy-admin
 npm install
 # Create .env.local
 echo "NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1" > .env.local
-echo "NEXTAUTH_SECRET=your_secure_random_string" >> .env.local
+echo "NEXT_PUBLIC_NEXTAUTH_SECRET=your_secure_random_string" >> .env.local
 npm run dev # Runs on http://localhost:3001
 ```
 
