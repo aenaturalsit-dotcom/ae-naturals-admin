@@ -2,7 +2,13 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,173 +16,222 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface HeroBannerProps {
   data?: any[];
   settings?: {
-    banners?: { imageUrl: string; link?: string }[];
+    banners?: {
+      imageUrl: string;
+      link?: string;
+      collectionId?: string;
+    }[];
   };
 }
 
-export const HeroBanner = ({ data = [], settings }: HeroBannerProps) => {
+export const HeroBanner = ({
+  data = [],
+  settings,
+}: HeroBannerProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // ✅ Normalize once (memoized for performance)
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const MIN_SWIPE_DISTANCE = 50;
+
   const normalizedData = useMemo(() => {
-    const rawBanners = settings?.banners?.length ? settings.banners : data;
+    const rawBanners =
+      settings?.banners?.length && settings.banners.length > 0
+        ? settings.banners
+        : data;
 
     return rawBanners
-      .map((banner: any) => {
-        const imgUrl =
+      .map((banner: any) => ({
+        imageUrl:
           banner.imageUrl ||
           banner.content?.imageUrl ||
           banner.content?.image ||
-          "";
+          "",
 
-        const linkUrl =
+        link:
           banner.link ||
           banner.content?.link ||
           banner.content?.url ||
-          "#";
+          "",
 
-        return {
-          imageUrl: imgUrl,
-          link: linkUrl,
-          altText:
-            banner.content?.altText || banner.title || "Hero banner image",
-        };
-      })
-      .filter((b) => b.imageUrl);
+        altText:
+          banner.content?.altText ||
+          banner.title ||
+          "Hero Banner",
+      }))
+      .filter((banner) => banner.imageUrl);
   }, [data, settings]);
 
   const total = normalizedData.length;
 
-  // ✅ Navigation handlers (stable)
   const goToNext = useCallback(() => {
+    if (total <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % total);
   }, [total]);
 
   const goToPrev = useCallback(() => {
+    if (total <= 1) return;
     setCurrentIndex((prev) => (prev - 1 + total) % total);
   }, [total]);
 
-  // ✅ Auto-play (pause on interaction)
   useEffect(() => {
-    if (total <= 1 || isPaused) return;
+    if (isPaused || total <= 1) return;
 
     const interval = setInterval(goToNext, 5000);
-    return () => clearInterval(interval);
-  }, [goToNext, total, isPaused]);
 
-  // ✅ Accessibility: keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") goToNext();
-    if (e.key === "ArrowLeft") goToPrev();
+    return () => clearInterval(interval);
+  }, [goToNext, isPaused, total]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    touchStartX.current = e.touches[0].clientX;
   };
 
-  // ✅ Empty state
-  if (!total) {
-    return (
-      <section
-        aria-label="Hero Banner Placeholder"
-        className="w-full bg-zinc-100"
-      >
-        <div className="aspect-[4/5] flex items-center justify-center text-zinc-400 text-xs tracking-widest uppercase">
-          Upload slides in Admin Panel
-        </div>
-      </section>
-    );
-  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (
+      touchStartX.current === null ||
+      touchEndX.current === null
+    ) {
+      setIsPaused(false);
+      return;
+    }
+
+    const distance =
+      touchStartX.current - touchEndX.current;
+
+    if (Math.abs(distance) > MIN_SWIPE_DISTANCE) {
+      if (distance > 0) {
+        goToNext();
+      } else {
+        goToPrev();
+      }
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+    setIsPaused(false);
+  };
+
+  if (!total) return null;
 
   return (
-    <section
-      className="relative w-full overflow-hidden bg-neutral-100"
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Hero banners"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-    >
-      {/* Slides */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9]">
-        {normalizedData.map((banner, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-              index === currentIndex
-                ? "opacity-100 z-10"
-                : "opacity-0 z-0 pointer-events-none"
-            }`}
-          >
-            <Link
-              href={banner.link}
-              aria-label={`Go to slide ${index + 1}`}
-              className="block w-full h-full relative"
-            >
-              <Image
-                src={banner.imageUrl}
-                alt={banner.altText}
-                fill
-                priority={index === 0}
-                sizes="100vw"
-                className="object-cover"
-                unoptimized
-              />
-            </Link>
+    <section className="w-full bg-white py-4 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+        <div
+          className="group relative overflow-hidden rounded-2xl md:rounded-3xl"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="relative h-[180px] sm:h-[260px] md:h-[360px] lg:h-[420px] xl:h-[480px]">
+            {normalizedData.map((banner, index) => {
+              const href = banner.link?.trim() || "#";
 
-            {/* Subtle gradient overlay for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              return (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    index === currentIndex
+                      ? "opacity-100 z-10"
+                      : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                >
+                  <Link
+                    href={href}
+                    className="block h-full w-full"
+                    aria-label={`Go to ${banner.altText}`}
+                  >
+                    <div className="relative h-full w-full">
+                      <Image
+                        src={banner.imageUrl}
+                        alt={banner.altText}
+                        fill
+                        priority={index === 0}
+                        sizes="100vw"
+                        className="object-cover object-center"
+                        unoptimized
+                      />
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
 
-      {/* Controls */}
-      {total > 1 && (
-        <>
-          {/* Arrows */}
-          <button
-            onClick={goToPrev}
-            aria-label="Previous slide"
-            className="hidden sm:flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 z-10 
-              h-10 w-10 rounded-full bg-white/80 backdrop-blur 
-              shadow-md hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-black/40"
-          >
-            <ChevronLeft size={20} />
-          </button>
+          {/* Navigation arrows */}
+          {total > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goToPrev();
+                }}
+                aria-label="Previous slide"
+                className="
+                  hidden md:flex
+                  absolute left-4 top-1/2 -translate-y-1/2 z-20
+                  h-10 w-10 items-center justify-center
+                  rounded-full bg-white/95 shadow-md backdrop-blur-sm
+                  opacity-0 scale-95
+                  transition-all duration-300
+                  group-hover:opacity-100 group-hover:scale-100
+                  hover:scale-110 hover:shadow-lg
+                "
+              >
+                <ChevronLeft size={18} />
+              </button>
 
-          <button
-            onClick={goToNext}
-            aria-label="Next slide"
-            className="hidden sm:flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 z-10 
-              h-10 w-10 rounded-full bg-white/80 backdrop-blur 
-              shadow-md hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-black/40"
-          >
-            <ChevronRight size={20} />
-          </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goToNext();
+                }}
+                aria-label="Next slide"
+                className="
+                  hidden md:flex
+                  absolute right-4 top-1/2 -translate-y-1/2 z-20
+                  h-10 w-10 items-center justify-center
+                  rounded-full bg-white/95 shadow-md backdrop-blur-sm
+                  opacity-0 scale-95
+                  transition-all duration-300
+                  group-hover:opacity-100 group-hover:scale-100
+                  hover:scale-110 hover:shadow-lg
+                "
+              >
+                <ChevronRight size={18} />
+              </button>
+            </>
+          )}
+        </div>
 
-          {/* Dots */}
-          <div
-            className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
-            role="tablist"
-            aria-label="Slide navigation"
-          >
+        {/* Dots */}
+        {total > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
             {normalizedData.map((_, index) => (
               <button
                 key={index}
-                role="tab"
-                aria-selected={index === currentIndex}
-                aria-label={`Go to slide ${index + 1}`}
                 onClick={() => setCurrentIndex(index)}
-                className={`transition-all duration-300 rounded-full focus:outline-none 
-                  ${
-                    index === currentIndex
-                      ? "w-6 h-2 bg-white"
-                      : "w-2 h-2 bg-white/50 hover:bg-white/80"
-                  }`}
+                aria-label={`Go to slide ${index + 1}`}
+                className={`rounded-full transition-all duration-300 ${
+                  currentIndex === index
+                    ? "w-3 h-3 bg-slate-700"
+                    : "w-2 h-2 bg-slate-300"
+                }`}
               />
             ))}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </section>
   );
 };
