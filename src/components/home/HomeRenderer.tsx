@@ -1,4 +1,5 @@
-// src\components\home\HomeRenderer.tsx
+// src/components/home/HomeRenderer.tsx
+
 
 "use client";
 
@@ -9,11 +10,13 @@ import { ProductCarousel } from "./ProductCarousel";
 import { PromotionalBanner } from "./PromotionalBanner";
 import { TrustTicker } from "./TrustTicker";
 import { BrandStory } from "./BrandStory";
-import { HomeBlogSection } from "./HomeBlogSection";
-import { CollectionsShowcase } from "./CollectionsShowcase";
 import { FeaturedProducts } from "./FeaturedProducts";
+import {HomeBlogSection} from "./HomeBlogSection";
+import { CollectionsShowcase } from "./CollectionsShowcase";
 import { VideoShoppableSection } from "./VideoShoppableSection";
 
+
+// 1. REGISTRY: Maps Admin block types to your actual React components
 const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   HERO: HeroBanner,
   COLLECTIONS: CollectionsShowcase,
@@ -24,6 +27,7 @@ const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   BRAND_STORY: BrandStory,
   BLOG_SECTION: HomeBlogSection,
   VIDEO_SHOPPABLE: VideoShoppableSection,
+
 };
 
 interface HomeRendererProps {
@@ -37,7 +41,6 @@ export default function HomeRenderer({
   data,
   previewMode = false,
 }: HomeRendererProps) {
-  // Mount state to prevent hydration errors when mixing Zustand with SSR
   const [mounted, setMounted] = useState(false);
   const liveSections = useStorefrontStore((state) => state.sections);
 
@@ -45,10 +48,8 @@ export default function HomeRenderer({
     setMounted(true);
   }, []);
 
-  // If in preview mode inside the admin panel, use the Zustand store.
-  // Otherwise, use the SSR injected config.
-  const sectionsToRender =
-    previewMode && mounted ? liveSections : config?.sectionsOrder;
+  // Determines the proper sequence based on Admin definition
+  const sectionsToRender = previewMode && mounted ? liveSections : config?.sectionsOrder;
 
   if (!sectionsToRender) return null;
 
@@ -58,6 +59,7 @@ export default function HomeRenderer({
         previewMode ? "min-h-full pb-16" : "min-h-screen pb-24"
       }`}
     >
+      {/* Maps through the exact sequence defined in the DB/Admin */}
       {sectionsToRender
         .filter((section: any) => section.isActive)
         .map((section: any) => {
@@ -83,44 +85,36 @@ export default function HomeRenderer({
   );
 }
 
-// Inside src/components/home/HomeRenderer.tsx
-
+// 2. DATA RESOLVER: Ensures components get the right backend data array
 function resolveData(section: any, data: any) {
   const settings = section.settings || {};
   const sourceKey = settings.dataSource;
 
-  // This 'data' object is exactly what you sent me in the JSON
   switch (section.type) {
-    case "FEATURED_PRODUCTS":
-      // Look specifically for the "featuredProducts" key from your JSON
+    case 'FEATURED_PRODUCTS':
       return data?.featuredProducts || [];
 
-    case "PRODUCT_CAROUSEL":
-      // 1. If it's a dynamic collection (e.g. "collection_summer-sale")
-      if (sourceKey?.startsWith("collection_")) {
-        const slug = sourceKey.replace("collection_", "");
+    case 'PRODUCT_CAROUSEL':
+      if (sourceKey?.startsWith('collection_')) {
+        const slug = sourceKey.replace('collection_', '');
         const target = data.collections?.find((c: any) => c.slug === slug);
-
-        // Unwrap join-table mapping if it exists
         return target?.products?.map((p: any) => p.product || p) || [];
       }
-
-      // 2. Fallback to standard data keys (e.g. "featuredProducts")
       return data[sourceKey] || [];
-
-    case "COLLECTIONS":
-      // This is for the grid of collection circles, it uses the whole collections array
+      
+    case 'COLLECTIONS':
+      // CollectionsShowcase fetches its own data using settings.collectionId, 
+      // but we pass the fallback collections array just in case.
       return data?.collections || [];
 
-    case "BLOG_SECTION":
-      // Look specifically for the "blogs" key from your JSON
+    case 'BLOG_SECTION':
       return data?.blogs || [];
 
-    case "HERO":
-    case "PROMO_BANNER":
-      // Currently your JSON shows banners as [], so this will be empty for now
+    case 'HERO':
+    case 'PROMO_BANNER':
       return data?.banners || [];
-    case "VIDEO_SHOPPABLE":
+
+       case "VIDEO_SHOPPABLE":
       // The video data is stored directly in the admin block settings now!
       return settings.slides || [];
 
