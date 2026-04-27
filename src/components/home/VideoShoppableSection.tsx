@@ -1,13 +1,36 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import Link from "next/link";
-import { Play, ShoppingBag } from "lucide-react";
+import {
+  Play,
+  ShoppingBag,
+} from "lucide-react";
 
-// ✅ ADDED: The same bulletproof image checker
-const isValidImageUrl = (url?: string) => {
-  if (!url || typeof url !== "string") return false;
+interface VideoShoppableProps {
+  data: any[];
+  settings: any;
+}
+
+const SECTION_SPACING = "py-8 md:py-12 lg:py-16";
+const CONTAINER_SPACING =
+  "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8";
+
+/**
+ * Validate image URL
+ */
+const isValidImageUrl = (
+  url?: string
+) => {
+  if (!url || typeof url !== "string")
+    return false;
+
   if (url.startsWith("/")) return true;
+
   try {
     new URL(url);
     return true;
@@ -16,48 +39,74 @@ const isValidImageUrl = (url?: string) => {
   }
 };
 
-interface VideoShoppableProps {
-  data: any[];
-  settings: any;
-}
+export const VideoShoppableSection: React.FC<
+  VideoShoppableProps
+> = ({ data, settings }) => {
+  const containerRef =
+    useRef<HTMLDivElement>(null);
 
-export const VideoShoppableSection: React.FC<VideoShoppableProps> = ({ data, settings }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const title =
+    settings?.title ||
+    "Quick Tutorials for Best Results";
 
-  const title = settings?.title || "Quick Tutorials for Best Results";
-  const subtitle = settings?.subtitle || "Watch, learn, and shop our expert recommendations";
-  const isMuted = settings?.muted !== false; 
+  const subtitle =
+    settings?.subtitle ||
+    "Watch, learn, and shop our expert recommendations";
 
-  const items = data?.filter((slide) => {
-    const isValid = slide?.videoUrl && slide?.product;
-    return isValid;
-  }) || [];
+  const isMuted =
+    settings?.muted !== false;
 
+  const items = useMemo(
+    () =>
+      data?.filter(
+        (slide) =>
+          slide?.videoUrl &&
+          slide?.product
+      ) || [],
+    [data]
+  );
+
+  /**
+   * Auto play/pause on viewport visibility
+   */
   useEffect(() => {
     if (!items.length) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const video = entry.target as HTMLVideoElement;
-          if (entry.isIntersecting) {
-            video.play().catch((err) => {
-               // Silently catch NotSupportedError (caused by slow loads or broken sources)
-               if (err.name !== 'NotSupportedError') {
-                 console.warn("[VideoShoppable] Autoplay prevented:", err.message);
-               }
-            });
-          } else {
-            video.pause();
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
+    const observer =
+      new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const video =
+              entry.target as HTMLVideoElement;
 
-    // Only observe actual video tags, completely ignoring GIFs
-    const videos = containerRef.current?.querySelectorAll("video");
-    videos?.forEach((vid) => observer.observe(vid));
+            if (entry.isIntersecting) {
+              video.play().catch((err) => {
+                if (
+                  err.name !==
+                  "NotSupportedError"
+                ) {
+                  console.warn(
+                    "[VideoShoppable] Autoplay prevented:",
+                    err.message
+                  );
+                }
+              });
+            } else {
+              video.pause();
+            }
+          });
+        },
+        { threshold: 0.6 }
+      );
+
+    const videos =
+      containerRef.current?.querySelectorAll(
+        "video"
+      );
+
+    videos?.forEach((video) =>
+      observer.observe(video)
+    );
 
     return () => observer.disconnect();
   }, [items]);
@@ -65,94 +114,167 @@ export const VideoShoppableSection: React.FC<VideoShoppableProps> = ({ data, set
   if (!items.length) return null;
 
   return (
-    <div className="py-16 md:py-24 overflow-hidden bg-white">
-      
-      {/* HEADER */}
-      <div className="text-center mb-12 md:mb-16 max-w-2xl mx-auto px-4">
-        <h2 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tight">
-          {title}
-        </h2>
-        <div className="h-1.5 w-16 bg-[#006044] rounded-full mx-auto mt-4" />
-        {subtitle && (
-          <p className="mt-4 text-sm md:text-base text-zinc-500 leading-relaxed">
-            {subtitle}
-          </p>
-        )}
-      </div>
+    <section
+      className={`overflow-hidden bg-white ${SECTION_SPACING}`}
+    >
+      <div className={CONTAINER_SPACING}>
+        {/* Header */}
+        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14 lg:mb-16">
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl md:text-4xl lg:text-5xl">
+            {title}
+          </h2>
 
-      {/* REELS CAROUSEL */}
-      <div
-        ref={containerRef}
-        className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 px-4 md:px-8 pb-8 max-w-[1400px] mx-auto"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {items.map((slide, i) => {
-          const safeImageSrc = isValidImageUrl(slide.product?.image) 
-            ? slide.product.image 
-            : "/placeholder.png";
+          <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-[#006044]" />
 
-          // 🚨 FIX: Determine if the media is actually a video or a GIF
-          const isVideo = slide.videoUrl.match(/\.(mp4|webm|mov|ogg)$/i) || slide.videoUrl.includes('/video/');
+          {subtitle && (
+            <p className="mt-4 text-sm leading-relaxed text-zinc-500 sm:text-base md:text-lg">
+              {subtitle}
+            </p>
+          )}
+        </div>
 
-          return (
-            <div
-              key={i}
-              className="relative flex-none w-[280px] h-[500px] md:w-[320px] md:h-[580px] snap-center rounded-3xl overflow-hidden shadow-xl group bg-zinc-900"
-            >
-              {/* 🚨 FIX: Conditionally render <video> vs <img> */}
-              {isVideo ? (
-                <video
-                  src={slide.videoUrl}
-                  loop
-                  muted={isMuted}
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  poster={safeImageSrc}
-                />
-              ) : (
-                <img
-                  src={slide.videoUrl}
-                  alt="Reel Media"
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-              )}
+        {/* Carousel Wrapper */}
+        <div className="relative">
+          {/* Right Fade */}
+          <div className="pointer-events-none absolute right-0 top-0 z-10 hidden h-full w-16 bg-gradient-to-l from-white to-transparent md:block" />
 
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/80 pointer-events-none" />
+          {/* Carousel */}
+          <div
+            ref={containerRef}
+            className="
+              flex overflow-x-auto overflow-y-hidden
+              gap-4 md:gap-6 lg:gap-8
+              snap-x snap-mandatory
+              scrollbar-none pb-4
+            "
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {items.map((slide, index) => {
+              const safeImageSrc =
+                isValidImageUrl(
+                  slide.product?.image
+                )
+                  ? slide.product.image
+                  : "/placeholder.png";
 
-              <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10 pointer-events-none text-white">
-                 <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full">
-                    <Play size={12} fill="currentColor" />
-                    <span className="text-[10px] font-bold">Trending</span>
-                 </div>
-              </div>
+              const isVideo =
+                slide.videoUrl.match(
+                  /\.(mp4|webm|mov|ogg)$/i
+                ) ||
+                slide.videoUrl.includes(
+                  "/video/"
+                );
 
-              <div className="absolute bottom-4 left-4 right-4 z-10 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                <Link href={`/product/${slide.product.slug}`}>
-                  <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl flex items-center gap-4 hover:bg-white/20 transition-colors">
+              return (
+                <div
+                  key={index}
+                  className="
+                    group relative flex-none
+                    w-[240px] h-[420px]
+                    sm:w-[260px] sm:h-[460px]
+                    md:w-[280px] md:h-[500px]
+                    lg:w-[320px] lg:h-[580px]
+                    snap-start overflow-hidden
+                    rounded-3xl bg-zinc-900 shadow-xl
+                  "
+                >
+                  {/* Media */}
+                  {isVideo ? (
+                    <video
+                      src={slide.videoUrl}
+                      loop
+                      muted={isMuted}
+                      playsInline
+                      poster={safeImageSrc}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
                     <img
-                    src={safeImageSrc} 
-                    alt={slide.product.name || "Product"}
-                    className="w-14 h-14 object-cover rounded-xl border border-white/10 shadow-sm bg-white"
-                    onError={(e) => {
-                      if (!e.currentTarget.src.includes("/placeholder.png")) {
-                        e.currentTarget.src = "/placeholder.png"; 
-                      }
-                    }}
-                  />
-                    <div className="flex-1 overflow-hidden">
-                      <h3 className="text-white font-bold text-sm truncate">{slide.product.name}</h3>
-                      <p className="text-white/80 text-xs font-medium">₹{slide.product.price}</p>
+                      src={slide.videoUrl}
+                      alt="Reel Media"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  )}
+
+                  {/* Overlay */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/80" />
+
+                  {/* Badge */}
+                  <div className="absolute left-4 top-4 z-10 text-white">
+                    <div className="flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                      <Play
+                        size={12}
+                        fill="currentColor"
+                      />
+                      <span className="text-[10px] font-semibold">
+                        Trending
+                      </span>
                     </div>
-                    <button className="bg-white text-black p-3 rounded-xl shadow-lg hover:scale-105 transition-transform">
-                      <ShoppingBag size={18} strokeWidth={2.5} />
-                    </button>
                   </div>
-                </Link>
-              </div>
-            </div>
-          );
-        })}
+
+                  {/* Product Card */}
+                  <div className="absolute bottom-4 left-4 right-4 z-10 translate-y-2 transition-transform duration-300 group-hover:translate-y-0">
+                    <Link
+                      href={`/product/${slide.product.slug}`}
+                    >
+                      <div className="flex items-center gap-4 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl transition-colors hover:bg-white/20">
+                        {/* Product Image */}
+                        <img
+                          src={safeImageSrc}
+                          alt={
+                            slide.product.name ||
+                            "Product"
+                          }
+                          className="h-14 w-14 rounded-xl border border-white/10 bg-white object-cover shadow-sm"
+                          onError={(e) => {
+                            if (
+                              !e.currentTarget.src.includes(
+                                "/placeholder.png"
+                              )
+                            ) {
+                              e.currentTarget.src =
+                                "/placeholder.png";
+                            }
+                          }}
+                        />
+
+                        {/* Product Info */}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-semibold text-white">
+                            {
+                              slide.product
+                                .name
+                            }
+                          </h3>
+
+                          <p className="text-xs font-medium text-white/80">
+                            ₹
+                            {
+                              slide.product
+                                .price
+                            }
+                          </p>
+                        </div>
+
+                        {/* CTA */}
+                        <button className="rounded-xl bg-white p-3 text-black shadow-lg transition-transform hover:scale-105">
+                          <ShoppingBag
+                            size={18}
+                            strokeWidth={2.2}
+                          />
+                        </button>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };

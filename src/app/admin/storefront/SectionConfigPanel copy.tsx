@@ -1,4 +1,3 @@
-// src/app/admin/storefront/SectionConfigPanel.tsx
 "use client";
 
 import { useStorefrontStore } from "@/store/useStorefrontStore";
@@ -11,7 +10,7 @@ import { useState } from "react";
 import { AdminProductSearchModal } from "../AdminProductSearchModal";
 
 export function SectionConfigPanel() {
-  const { sections, activeSectionId, updateSectionSettings } = useStorefrontStore();
+  const { sections, activeSectionId, updateSectionSettings } =  useStorefrontStore();
 
   const activeSection = sections.find((s) => s.id === activeSectionId);
 
@@ -29,16 +28,11 @@ export function SectionConfigPanel() {
   const isCollectionBlock = activeSection?.type === "COLLECTIONS";
   const isProductCarousel = activeSection?.type === "PRODUCT_CAROUSEL";
   const isVideoShoppable = activeSection?.type === "VIDEO_SHOPPABLE";
-  const isHeroSection = activeSection?.type === "HERO";
-  
-  // 🔥 All these blocks need the Collections data
-  const needsCollectionsData =
-    isCollectionBlock ||
-    isProductCarousel ||
-    isVideoShoppable ||
-    isHeroSection;
+  // 🔥 Both blocks need the Collections data now (one for buttons, one for dropdown)
 
-  // LOCAL STATE FOR MODAL
+  const needsCollectionsData = isCollectionBlock || isProductCarousel || isVideoShoppable;
+
+  // 2. ADD LOCAL STATE FOR MODAL
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(null);
 
@@ -53,7 +47,7 @@ export function SectionConfigPanel() {
     queryFn: async () => {
       try {
         const res: any = await apiClient.get(
-          `/admin/collections?t=${Date.now()}`
+          `/admin/collections?t=${Date.now()}`,
         );
         if (Array.isArray(res)) return res;
         if (res?.data && Array.isArray(res.data)) return res.data;
@@ -63,7 +57,7 @@ export function SectionConfigPanel() {
         return [];
       }
     },
-    enabled: needsCollectionsData, 
+    enabled: needsCollectionsData, // 🚨 Now triggers for the Carousel too!
   });
 
   if (!activeSection) {
@@ -73,7 +67,6 @@ export function SectionConfigPanel() {
       </div>
     );
   }
-
   const selectedCollectionId =
     typeof activeSection.settings?.collectionId === "string"
       ? activeSection.settings.collectionId
@@ -98,7 +91,7 @@ export function SectionConfigPanel() {
 
   return (
     <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300">
-      {/* ADD MODAL AT THE TOP LEVEL OF THE RETURN */}
+      {/* 3. ADD MODAL AT THE TOP LEVEL OF THE RETURN */}
       <AdminProductSearchModal
         isOpen={productSearchOpen}
         onClose={() => {
@@ -120,7 +113,6 @@ export function SectionConfigPanel() {
           updateSectionSettings(activeSection.id, { slides: updatedSlides });
         }}
       />
-
       <div>
         <h3 className="text-2xl font-black text-zinc-900 tracking-tight">
           {activeSection.type.replace("_", " ")}
@@ -179,28 +171,19 @@ export function SectionConfigPanel() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {safeCollections.map((col: any) => {
-                  // Safely compare IDs as strings to prevent matching bugs
-                  const isSelected = String(selectedCollectionId) === String(col.id);
-                  
+                  const isSelected = selectedCollectionId === col.id;
                   return (
                     <button
                       key={col.id}
                       type="button"
                       onClick={() => handleSelectCollection(col.id, col.slug)}
-                      className={`px-4 py-2 text-xs font-bold rounded-full border transition-all duration-200 flex items-center gap-1.5 ${
+                      className={`px-4 py-2 text-xs font-bold rounded-full border transition-all ${
                         isSelected
-                          // ACTIVE / SELECTED STATE: Dark green background, white text, ring glow
-                          ? "bg-[#006044] text-white border-[#006044] shadow-md ring-2 ring-offset-2 ring-[#006044]/30 scale-105"
-                          // INACTIVE STATE: White background, gray text
-                          : "bg-white text-zinc-600 border-zinc-200 hover:border-[#006044] hover:bg-[#006044]/5 hover:text-[#006044]"
+                          ? "bg-[#006044] text-white border-[#006044] shadow-md scale-105"
+                          : "bg-white text-zinc-600 border-zinc-200 hover:border-[#006044] hover:bg-green-50"
                       }`}
                     >
-                      {col.name} 
-                      {isSelected && (
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      )}
+                      {col.name} {isSelected && "✓"}
                     </button>
                   );
                 })}
@@ -208,7 +191,7 @@ export function SectionConfigPanel() {
             )}
           </div>
         )}
-        
+
         {/* IMAGE UPLOAD */}
         {["PROMO_BANNER", "BRAND_STORY"].includes(activeSection.type) && (
           <div className="space-y-3 pt-2">
@@ -269,7 +252,7 @@ export function SectionConfigPanel() {
                 </CldUploadWidget>
               )}
             </div>
-            
+            {/* 👇 ADD THIS */}
             <p className="mt-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold">
               ⚠ Recommended:{" "}
               <span className="font-bold">
@@ -282,8 +265,6 @@ export function SectionConfigPanel() {
             </p>
           </div>
         )}
-
-        {/* PROMO BANNER SETTINGS */}
         {activeSection.type === "PROMO_BANNER" && (
           <div className="space-y-4 pt-4 border-t border-zinc-100">
             <div className="space-y-2">
@@ -336,155 +317,146 @@ export function SectionConfigPanel() {
             </div>
           </div>
         )}
+        
 
-        {/* HERO CONFIGURATION */}
-        {activeSection.type === "HERO" && (
-          <div className="space-y-4 pt-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                Hero Slides
-              </label>
+         {activeSection.type === "HERO" && (
+        <div className="space-y-4 pt-2">
+          <div className="flex justify-between items-center">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Hero Slides
+            </label>
 
-              <button
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="text-[10px] flex items-center gap-1 font-bold text-[#006044]"
-              >
-                <RefreshCw
-                  className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`}
-                />
-                Reload Collections
-              </button>
-            </div>
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="text-[10px] flex items-center gap-1 font-bold text-[#006044]"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`}
+              />
+              Reload Collections
+            </button>
+          </div>
 
-            {/* Existing Slides */}
-            <div className="space-y-3">
-              {((activeSection.settings.banners as any[]) || []).map(
-                (slide, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-4 bg-zinc-50 border border-zinc-200 rounded-2xl"
-                  >
-                    {/* Preview */}
-                    <img
-                      src={slide.imageUrl}
-                      alt={`Slide ${index}`}
-                      className="w-20 h-14 object-cover rounded-xl border"
-                    />
+          {/* Existing Slides */}
+          <div className="space-y-3">
+            {((activeSection.settings.banners as any[]) || []).map(
+              (slide, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-4 p-4 bg-zinc-50 border border-zinc-200 rounded-2xl"
+                >
+                  {/* Preview */}
+                  <img
+                    src={slide.imageUrl}
+                    alt={`Slide ${index}`}
+                    className="w-20 h-14 object-cover rounded-xl border"
+                  />
 
-                    {/* Config */}
-                    <div className="flex-1 space-y-3">
-                      {/* Collection Selector */}
-                      <select
-                        value={slide.collectionId || ""}
-                        onChange={(e) => {
-                          const selectedCollection = safeCollections.find(
-                            (c: any) => c.id === e.target.value
-                          );
+                  {/* Config */}
+                  <div className="flex-1 space-y-3">
+                    {/* Collection Selector */}
+                    <select
+                      value={slide.collectionId || ""}
+                      onChange={(e) => {
+                        const selectedCollection = safeCollections.find(
+                          (c: any) => c.id === e.target.value
+                        );
 
-                          const newBanners = [
-                            ...(activeSection.settings.banners as any[]),
-                          ];
+                        const newBanners = [
+                          ...(activeSection.settings.banners as any[]),
+                        ];
 
-                          newBanners[index] = {
-                            ...newBanners[index],
-                            collectionId: selectedCollection?.id || "",
-                            link: selectedCollection
-                              ? `/collections/${selectedCollection.slug}`
-                              : "",
-                          };
-
-                          updateSectionSettings(activeSection.id, {
-                            banners: newBanners,
-                          });
-                        }}
-                        className="w-full text-xs p-3 border border-zinc-200 rounded-xl outline-none"
-                      >
-                        <option value="">Select Collection (Auto-fills link)</option>
-                        {safeCollections.map((collection: any) => (
-                          <option
-                            key={collection.id}
-                            value={collection.id}
-                          >
-                            {collection.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      {/* Custom Link Input */}
-                      <input
-                        type="text"
-                        value={slide.link || ""}
-                        onChange={(e) => {
-                          const newBanners = [...(activeSection.settings.banners as any[])];
-                          newBanners[index] = {
-                            ...newBanners[index],
-                            link: e.target.value,
-                          };
-                          updateSectionSettings(activeSection.id, {
-                            banners: newBanners,
-                          });
-                        }}
-                        placeholder="Custom link (e.g., /pages/about or https://...)"
-                        className="w-full text-xs p-3 border border-zinc-200 rounded-xl bg-white focus:ring-2 focus:ring-[#006044] outline-none transition-all"
-                      />
-                    </div>
-
-                    {/* Delete */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newBanners = (
-                          activeSection.settings.banners as any[]
-                        ).filter((_, i) => i !== index);
+                        newBanners[index] = {
+                          ...newBanners[index],
+                          collectionId: selectedCollection?.id || "",
+                          link: selectedCollection
+                            ? `/collections/${selectedCollection.slug}`
+                            : "",
+                        };
 
                         updateSectionSettings(activeSection.id, {
                           banners: newBanners,
                         });
                       }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl mt-1"
+                      className="w-full text-xs p-3 border border-zinc-200 rounded-xl outline-none"
                     >
-                      <X size={16} strokeWidth={3} />
-                    </button>
+                      <option value="">Select Collection</option>
+
+                      {safeCollections.map((collection: any) => (
+                        <option
+                          key={collection.id}
+                          value={collection.id}
+                        >
+                          {collection.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Auto-generated link preview */}
+                    <input
+                      type="text"
+                      value={slide.link || ""}
+                      readOnly
+                      className="w-full text-xs p-3 border border-zinc-200 rounded-xl bg-zinc-100 text-zinc-500"
+                    />
                   </div>
-                )
-              )}
-            </div>
 
-            {/* Upload New Hero Slide */}
-            <CldUploadWidget
-              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-              onSuccess={(result: any) => {
-                if (result.event === "success") {
-                  const currentBanners =
-                    (activeSection.settings.banners as any[]) || [];
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newBanners = (
+                        activeSection.settings.banners as any[]
+                      ).filter((_, i) => i !== index);
 
-                  updateSectionSettings(activeSection.id, {
-                    banners: [
-                      ...currentBanners,
-                      {
-                        imageUrl: result.info.secure_url,
-                        collectionId: "",
-                        link: "",
-                      },
-                    ],
-                  });
-                }
-              }}
-            >
-              {({ open }) => (
-                <button
-                  type="button"
-                  onClick={() => open()}
-                  className="w-full py-4 border-2 border-dashed border-[#006044]/30 rounded-2xl flex items-center justify-center gap-2 text-[#006044] font-bold text-xs"
-                >
-                  <Upload size={16} />
-                  Add New Slide
-                </button>
-              )}
-            </CldUploadWidget>
+                      updateSectionSettings(activeSection.id, {
+                        banners: newBanners,
+                      });
+                    }}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-xl"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              )
+            )}
           </div>
-        )}
+
+          {/* Upload New Hero Slide */}
+          <CldUploadWidget
+            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+            onSuccess={(result: any) => {
+              if (result.event === "success") {
+                const currentBanners =
+                  (activeSection.settings.banners as any[]) || [];
+
+                updateSectionSettings(activeSection.id, {
+                  banners: [
+                    ...currentBanners,
+                    {
+                      imageUrl: result.info.secure_url,
+                      collectionId: "",
+                      link: "",
+                    },
+                  ],
+                });
+              }
+            }}
+          >
+            {({ open }) => (
+              <button
+                type="button"
+                onClick={() => open()}
+                className="w-full py-4 border-2 border-dashed border-[#006044]/30 rounded-2xl flex items-center justify-center gap-2 text-[#006044] font-bold text-xs"
+              >
+                <Upload size={16} />
+                Add New Slide
+              </button>
+            )}
+          </CldUploadWidget>
+        </div>
+      )}
 
         {/* BRAND STORY CONFIGURATION */}
         {activeSection.type === "BRAND_STORY" && (
@@ -537,29 +509,33 @@ export function SectionConfigPanel() {
                 />
               </div>
             </div>
-            
-            <div className="space-y-4 pt-4 border-t border-zinc-100">
-              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                Image Alignment
-              </label>
-              <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-2xl">
-                {(["left", "right"] as const).map((pos) => (
-                  <button
-                    key={pos}
-                    type="button"
-                    onClick={() =>
-                      updateSectionSettings(activeSection.id, { layout: pos })
-                    }
-                    className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                      (activeSection.settings.layout || "left") === pos
-                        ? "bg-white text-[#006044] shadow-sm"
-                        : "text-zinc-400 hover:text-zinc-600"
-                    }`}
-                  >
-                    {pos}
-                  </button>
-                ))}
-              </div>
+
+            {/* Reuse your existing Image Upload Logic here for the Story Image */}
+          </div>
+        )}
+
+        {activeSection.type === "BRAND_STORY" && (
+          <div className="space-y-4 pt-4 border-t border-zinc-100">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Image Alignment
+            </label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-2xl">
+              {(["left", "right"] as const).map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() =>
+                    updateSectionSettings(activeSection.id, { layout: pos })
+                  }
+                  className={`py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                    (activeSection.settings.layout || "left") === pos
+                      ? "bg-white text-[#006044] shadow-sm"
+                      : "text-zinc-400 hover:text-zinc-600"
+                  }`}
+                >
+                  {pos}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -578,7 +554,9 @@ export function SectionConfigPanel() {
           </div>
         )}
 
-        {/* PRODUCT CAROUSEL CONFIGURATION */}
+        {/* ========================================== */}
+        {/* 1. DYNAMIC DROPDOWN (ONLY FOR PRODUCT CAROUSEL) */}
+        {/* ========================================== */}
         {activeSection.type === "PRODUCT_CAROUSEL" && (
           <div className="space-y-2 pt-2">
             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
@@ -666,12 +644,16 @@ export function SectionConfigPanel() {
                 }
               />
             </div>
+            {/* Using the standard Data Source Input we built earlier for 'blogs' key */}
           </div>
         )}
 
-        {/* VIDEO SHOPPABLE CONFIGURATION */}
+        {/* 4. REPLACEMENT FOR VIDEO_SHOPPABLE CONFIG */}
+
+        {/* 4. REPLACEMENT FOR VIDEO_SHOPPABLE CONFIG */}
         {activeSection.type === "VIDEO_SHOPPABLE" && (
           <div className="space-y-4 pt-4 border-t border-zinc-100">
+            {/* ✅ DYNAMIC SUBTITLE INPUT */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 Subtitle
@@ -726,6 +708,7 @@ export function SectionConfigPanel() {
                       </label>
                       {slide.videoUrl ? (
                         <div className="flex items-center gap-3 bg-white p-2 border border-zinc-200 rounded-xl relative group">
+                          {/* 🚨 FIX: Bulletproof Media Renderer */}
                           {slide.videoUrl.match(/\.(mp4|webm|mov|ogg)$/i) ||
                           slide.videoUrl.includes("/video/") ? (
                             <video
@@ -778,15 +761,17 @@ export function SectionConfigPanel() {
                             process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
                           }
                           options={{
+                            // Recommend client-side restriction for videos & gifs
                             clientAllowedFormats: ["mp4", "webm", "mov", "gif"],
                           }}
                           onSuccess={(result: any) => {
                             if (result.event === "success") {
+                              // Note: Videos are larger! Using a 15MB limit instead of the 500KB image limit.
                               const fileSizeMB =
                                 result.info.bytes / (1024 * 1024);
                               if (fileSizeMB > 15) {
                                 alert(
-                                  "Video is too large. Please upload files under 15MB for optimal performance."
+                                  "Video is too large. Please upload files under 15MB for optimal performance.",
                                 );
                                 return;
                               }
@@ -864,7 +849,7 @@ export function SectionConfigPanel() {
                       )}
                     </div>
                   </div>
-                )
+                ),
               )}
             </div>
 
