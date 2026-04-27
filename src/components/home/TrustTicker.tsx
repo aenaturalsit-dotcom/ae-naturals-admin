@@ -1,25 +1,32 @@
 // src/components/home/TrustTicker.tsx
 
-
-
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import  apiClient  from "@/lib/api-client";
+import apiClient from "@/lib/api-client";
 
+const SECTION_SPACING = "py-8 md:py-12 lg:py-16";
+const CONTAINER_SPACING = "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8";
+
+/**
+ * Resolve icon safely from Lucide
+ */
 const getIcon = (name?: string) => {
   if (!name) return LucideIcons.ShieldCheck;
 
+  const formattedName = name
+    .split("-")
+    .map(
+      (word: string) =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join("");
+
   return (
     (LucideIcons as any)[name] ||
-    (LucideIcons as any)[
-      name
-        .split("-")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join("")
-    ] ||
+    (LucideIcons as any)[formattedName] ||
     LucideIcons.ShieldCheck
   );
 };
@@ -30,56 +37,68 @@ export const TrustTicker = ({ settings }: any) => {
   const { data: masterFeatures = [], isLoading } = useQuery({
     queryKey: ["storefront-features"],
     queryFn: async () => {
-      const res: any = await apiClient.get("/storefront/features");
+      const res: any = await apiClient.get(
+        "/storefront/features"
+      );
+
       return Array.isArray(res) ? res : res?.data || [];
     },
     staleTime: 1000 * 60 * 60,
   });
 
-  const activeBadges = Array.isArray(masterFeatures)
-    ? masterFeatures.filter((f: any) => selectedIds.includes(f.id))
-    : [];
+  /**
+   * Filter only selected badges
+   */
+  const activeBadges = useMemo(() => {
+    if (!Array.isArray(masterFeatures)) return [];
+
+    return masterFeatures.filter((feature: any) =>
+      selectedIds.includes(feature.id)
+    );
+  }, [masterFeatures, selectedIds]);
 
   if (isLoading || !activeBadges.length) return null;
 
   return (
-    <section className="w-full bg-[#f5f5f5] border-y border-neutral-200 py-12 ">
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
+    <section className={`w-full bg-white ${SECTION_SPACING}`}>
+      <div className={CONTAINER_SPACING}>
+        {/* Main Container */}
+        <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-6 md:p-8 lg:p-10 shadow-sm">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+            {activeBadges.map((badge: any) => {
+              const Icon = getIcon(badge.icon);
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-10 gap-x-6 text-center">
-          {activeBadges.map((badge: any) => {
-            const Icon = getIcon(badge.icon);
+              return (
+                <div
+                  key={badge.id}
+                  className="flex flex-col items-center text-center px-2 py-2"
+                >
+                  {/* Icon */}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black shadow-sm md:h-16 md:w-16">
+                    <Icon
+                      className="h-6 w-6 text-white md:h-7 md:w-7"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    />
+                  </div>
 
-            return (
-              <div
-                key={badge.id}
-                className="flex flex-col items-center max-w-[220px]"
-              >
-                {/* ICON */}
-                <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center mb-4">
-                  <Icon
-                    className="w-6 h-6 text-white"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
+                  {/* Content */}
+                  <div className="mt-4 space-y-2">
+                    <h3 className="text-sm font-semibold leading-tight text-neutral-900 md:text-base">
+                      {badge.title}
+                    </h3>
+
+                    {badge.description && (
+                      <p className="text-xs leading-relaxed text-neutral-500 md:text-sm">
+                        {badge.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-
-                {/* TITLE */}
-                <h3 className="text-sm font-semibold text-neutral-900">
-                  {badge.title}
-                </h3>
-
-                {/* DESCRIPTION */}
-                {badge.description && (
-                  <p className="mt-1 text-xs text-neutral-500 leading-relaxed">
-                    {badge.description}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-
       </div>
     </section>
   );
