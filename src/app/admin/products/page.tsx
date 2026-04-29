@@ -6,15 +6,13 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusCircle, Loader2, Package, CheckCircle2, AlertCircle, Trash2, Edit3 } from 'lucide-react';
 import apiClient from '@/lib/api-client';
-import { AddProductModal } from '@/components/admin/AddProductModal';
 import { adminProductService } from '@/services/admin-products.service';
 import { Product } from '@/types/types';
 import { useRouter } from "next/navigation";
 
 
 export default function ProductsPage() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -107,10 +105,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <AddProductModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-      />
+      
     </div>
   );
 }
