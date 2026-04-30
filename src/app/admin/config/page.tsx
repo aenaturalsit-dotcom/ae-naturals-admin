@@ -51,7 +51,9 @@ const TABS = [
 export default function GeneralConfigPage() {
   const [activeTab, setActiveTab] = useState<TabType>("EMAIL");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProvider, setEditingProvider] = useState<ProviderConfig | null>(null);
+  const [editingProvider, setEditingProvider] = useState<ProviderConfig | null>(
+    null,
+  );
 
   const queryClient = useQueryClient();
 
@@ -82,7 +84,6 @@ export default function GeneralConfigPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
-
       {/* 🔥 HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -136,8 +137,6 @@ export default function GeneralConfigPage() {
                   }`}
                 >
                   <Icon size={18} />
-
-               
                 </div>
 
                 {/* TEXT */}
@@ -153,17 +152,9 @@ export default function GeneralConfigPage() {
                   </span>
 
                   <span
-                    className={`text-[10px] font-bold mt-[2px] ${
-                 
-                         "text-green-600"
-                      
-                    }`}
+                    className={`text-[10px] font-bold mt-[2px] ${"text-green-600"}`}
                   >
-                    {
-                      "Active"
-                     
-                      
-                      }
+                    {"Active"}
                   </span>
                 </div>
               </div>
@@ -201,7 +192,9 @@ export default function GeneralConfigPage() {
       <ProviderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={(data: ProviderConfig) => saveMutation.mutateAsync(data)}
+        onSave={async (data: ProviderConfig) => {
+          await saveMutation.mutateAsync(data);
+        }}
         initialData={editingProvider}
         activeType={activeTab}
       />
