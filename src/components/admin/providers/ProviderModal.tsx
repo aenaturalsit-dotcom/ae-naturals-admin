@@ -237,7 +237,7 @@ const PROVIDER_SCHEMAS: ProviderSchema = {
   {
   key: "backend_webhook_url",
   placeholder: "https://api.yourstore.com/api/v1",
-  note: "Example: http://localhost:4000/api/v1. Public backend endpoint to receive PayU payment status callbacks.",
+  note: "Example: http://yourstore.com/api/v1. Public backend endpoint to receive PayU payment status callbacks.",
 },
   {
     key: "is_production",
