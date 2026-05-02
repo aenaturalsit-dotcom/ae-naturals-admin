@@ -206,11 +206,11 @@ const PROVIDER_SCHEMAS: ProviderSchema = {
       },
       {
         key: 'frontend_url',
-        placeholder: 'https://yourstore.com',
+        placeholder: 'https://yourdomain.com',
       },
       {
         key: 'backend_webhook_url',
-        placeholder: 'https://api.yourstore.com/webhook',
+        placeholder: 'https://api.yourdomain.com/webhook',
       },
       {
         key: 'is_production',
@@ -231,13 +231,13 @@ const PROVIDER_SCHEMAS: ProviderSchema = {
   },
   {
     key: "frontend_url",
-    placeholder: "https://yourstore.com",
+    placeholder: "https://yourdomain.com",
     note: "Customer-facing website URL where users are redirected after payment success or failure.",
   },
   {
   key: "backend_webhook_url",
-  placeholder: "https://api.yourstore.com/api/v1",
-  note: "Example: http://yourstore.com/api/v1. Public backend endpoint to receive PayU payment status callbacks.",
+  placeholder: "https://api.yourdomain.com/api/v1",
+  note: "Example: http://yourdomain.com/api/v1. Public backend endpoint to receive PayU payment status callbacks.",
 },
   {
     key: "is_production",
@@ -251,7 +251,7 @@ const PROVIDER_SCHEMAS: ProviderSchema = {
     SHIPROCKET: [
       {
         key: 'email',
-        placeholder: 'support@yourstore.com',
+        placeholder: 'support@yourdomain.com',
       },
       {
         key: 'password',
@@ -294,7 +294,7 @@ const PROVIDER_SCHEMAS: ProviderSchema = {
     NIMBUSPOST: [
       {
         key: 'email',
-        placeholder: 'support@yourstore.com',
+        placeholder: 'support@yourdomain.com',
       },
       {
         key: 'password',
