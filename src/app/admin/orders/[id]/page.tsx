@@ -1,11 +1,10 @@
 // src/app/admin/orders/[id]/page.tsx
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import useSWR from "swr";
-import { OrderStatus } from "@/types/types";
 import apiClient from "@/lib/api-client";
-import CancelOrderModal from "../CancelOrderModal"; // 🔥 Make sure this path is correct
+import CancelOrderModal from "../CancelOrderModal"; 
 import {
   Package,
   XCircle,
@@ -28,13 +27,14 @@ const fetcher = async (url: string) => {
   }
 };
 
-// 🔥 STATE MACHINE (Includes PROCESSING so buttons show up)
-const ORDER_TRANSITIONS: Record<string, OrderStatus[]> = {
-  PENDING: [OrderStatus.PAID, OrderStatus.CANCELLED],
-  PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-  PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED], 
-  SHIPPED: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
-  DELIVERED: [OrderStatus.RETURNED],
+// 🔥 STATE MACHINE
+// FIX: Strictly using strings. Using Enums from type files in Turbopack causes 'undefined' runtime errors.
+const ORDER_TRANSITIONS: Record<string, string[]> = {
+  PENDING: ["PAID", "CANCELLED"],
+  PAID: ["PROCESSING", "SHIPPED", "CANCELLED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
   CANCELLED: [],
   RETURNED: [],
 };
@@ -55,21 +55,33 @@ export default function AdminOrderDetailsPage({
 }) {
   const resolvedParams = use(params);
   const orderId = resolvedParams?.id;
-  
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
-  const { data: order, error, isLoading, mutate } = useSWR(
-    orderId ? `/admin/orders/${orderId}` : null,
-    fetcher
-  );
+  const {
+    data: order,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR(orderId ? `/admin/orders/${orderId}` : null, fetcher);
+
+  // --- DEBUGGING LOGS ---
+  useEffect(() => {
+    if (order) {
+      console.log("[DEBUG] Order Data Fetched:", order);
+      console.log("[DEBUG] Raw Order Status:", order.status);
+    }
+  }, [order]);
 
   // --- ERROR / LOADING STATES ---
   if (error) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <XCircle className="h-12 w-12 text-red-500" />
-        <h2 className="text-xl font-bold text-gray-900">Failed to load order</h2>
+        <h2 className="text-xl font-bold text-gray-900">
+          Failed to load order
+        </h2>
       </div>
     );
   }
@@ -93,15 +105,21 @@ export default function AdminOrderDetailsPage({
     );
   }
 
-  // --- SAFE FALLBACKS ---
-  const currentStatus = order.status || OrderStatus.PENDING;
-  const availableActions = ORDER_TRANSITIONS[currentStatus] || [];
+  // --- SAFE FALLBACKS (Prevents .length crashes) ---
+  // Guarantees it is always a valid string, even if the API sends null
+  const currentStatus = order?.status ? String(order.status) : "PENDING";
+  
+  // Safely grab the array, fallback to empty array if the status string is unrecognized
+  const rawActions = ORDER_TRANSITIONS[currentStatus];
+  const availableActions = Array.isArray(rawActions) ? rawActions : [];
+  
   const hasAddress = order.addressSnapshot && order.addressSnapshot.name;
 
   // --- ACTION HANDLER ---
-  const handleStateChange = async (newStatus: OrderStatus) => {
-    if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
-    
+  const handleStateChange = async (newStatus: string) => {
+    if (!confirm(`Are you sure you want to change status to ${newStatus}?`))
+      return;
+
     setIsUpdating(true);
     try {
       await apiClient.patch(`/admin/orders/${orderId}/status`, {
@@ -119,28 +137,29 @@ export default function AdminOrderDetailsPage({
   return (
     <>
       <div className="max-w-[1200px] mx-auto py-8 px-4 space-y-6">
-        
-        {/* 🔥 TOP HEADER (Matching your preferred styling) */}
+        {/* 🔥 TOP HEADER */}
         <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              Order #{order.id?.slice(-6).toUpperCase() || 'UNKNOWN'}
+              Order #{order.id?.slice(-6).toUpperCase() || "UNKNOWN"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Currently: <strong className="text-gray-900">{currentStatus}</strong>
+              Currently:{" "}
+              <strong className="text-gray-900">{currentStatus}</strong>
             </p>
           </div>
-          
+
           {/* Dynamic State Machine Buttons */}
           <div className="flex gap-3">
             {availableActions.length === 0 && (
-              <span className="text-sm text-gray-500 italic py-2">No further actions available</span>
+              <span className="text-sm text-gray-500 italic py-2">
+                No further actions available
+              </span>
             )}
             {availableActions.map((targetStatus) => (
               <button
                 key={targetStatus}
                 onClick={() => {
-                  // Intercept CANCELLED to open the modal
                   if (targetStatus === "CANCELLED") {
                     setIsCancelModalOpen(true);
                   } else {
@@ -151,19 +170,21 @@ export default function AdminOrderDetailsPage({
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center ${
                   isUpdating ? "opacity-50 cursor-not-allowed" : ""
                 } ${
-                  targetStatus === 'CANCELLED' 
-                    ? 'bg-white text-red-600 border border-red-200 hover:bg-red-50'
-                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                  targetStatus === "CANCELLED"
+                    ? "bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
                 }`}
               >
-                {isUpdating && targetStatus !== "CANCELLED" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isUpdating && targetStatus !== "CANCELLED" && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 {ACTION_LABELS[targetStatus] || targetStatus}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 🔥 REST OF THE PAGE (Restored) */}
+        {/* 🔥 REST OF THE PAGE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT COLUMN: CUSTOMER & ADDRESS */}
           <div className="space-y-6">
@@ -194,10 +215,13 @@ export default function AdminOrderDetailsPage({
                   <MapPin className="h-5 w-5 text-gray-400" /> Shipping Address
                 </h3>
                 <address className="not-italic text-sm text-gray-600 space-y-1">
-                  <p className="font-medium text-gray-900">{order.addressSnapshot?.name}</p>
+                  <p className="font-medium text-gray-900">
+                    {order.addressSnapshot?.name}
+                  </p>
                   <p>{order.addressSnapshot?.addressLine}</p>
                   <p>
-                    {order.addressSnapshot?.city}, {order.addressSnapshot?.state}{" "}
+                    {order.addressSnapshot?.city},{" "}
+                    {order.addressSnapshot?.state}{" "}
                     {order.addressSnapshot?.pincode}
                   </p>
                   <p className="pt-2">Phone: {order.addressSnapshot?.phone}</p>
@@ -215,8 +239,12 @@ export default function AdminOrderDetailsPage({
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">
                   Gateway
                 </h3>
-                <p className="font-medium text-gray-900">{order.paymentProvider}</p>
-                <p className="text-xs text-gray-500 mt-1 font-mono break-all">ID: {order.paymentProviderId}</p>
+                <p className="font-medium text-gray-900">
+                  {order.paymentProvider}
+                </p>
+                <p className="text-xs text-gray-500 mt-1 font-mono break-all">
+                  ID: {order.paymentProviderId}
+                </p>
               </div>
             )}
           </div>
@@ -228,51 +256,73 @@ export default function AdminOrderDetailsPage({
                 <h3 className="font-bold text-gray-900">Ordered Items</h3>
               </div>
               <div className="divide-y divide-gray-100">
-                {order.items && Array.isArray(order.items) ? order.items.map((item: any) => (
-                  <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-                    <div className="h-16 w-16 bg-white rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
-                      {item?.product?.images?.[0] ? (
-                        <img
-                          src={item.product.images[0]}
-                          alt={item.product?.name || 'product'}
-                          className="h-full w-full object-contain"
-                        />
-                      ) : (
-                        <Package className="text-gray-300" />
-                      )}
+                {order.items && Array.isArray(order.items) ? (
+                  order.items.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="h-16 w-16 bg-white rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
+                        {item?.product?.images?.[0] ? (
+                          <img
+                            src={item.product.images[0]}
+                            alt={item.product?.name || "product"}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <Package className="text-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">
+                          {item?.product?.name || "Product Unavailable"}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          Unit Price: ₹
+                          {item?.price?.toLocaleString("en-IN") || 0}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">
+                          ₹
+                          {(
+                            (item?.price || 0) * (item?.quantity || 1)
+                          ).toLocaleString("en-IN")}
+                        </p>
+                        <p className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
+                          Qty: {item?.quantity || 1}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item?.product?.name || "Product Unavailable"}</h4>
-                      <p className="text-sm text-gray-500">Unit Price: ₹{item?.price?.toLocaleString("en-IN") || 0}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">
-                        ₹{((item?.price || 0) * (item?.quantity || 1)).toLocaleString("en-IN")}
-                      </p>
-                      <p className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
-                        Qty: {item?.quantity || 1}
-                      </p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No items found in this order.
                   </div>
-                )) : (
-                  <div className="p-4 text-center text-gray-500">No items found in this order.</div>
                 )}
               </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Summary</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Payment Summary
+              </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span className="font-medium">
-                    ₹{((order.totalAmount || 0) - (order.shippingCost || 0)).toLocaleString("en-IN")}
+                    ₹
+                    {(
+                      (order.totalAmount || 0) - (order.shippingCost || 0)
+                    ).toLocaleString("en-IN")}
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping Fee</span>
                   <span className="font-medium">
-                    {order.shippingCost ? `₹${order.shippingCost.toLocaleString("en-IN")}` : "Free"}
+                    {order.shippingCost
+                      ? `₹${order.shippingCost.toLocaleString("en-IN")}`
+                      : "Free"}
                   </span>
                 </div>
                 <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
@@ -286,16 +336,17 @@ export default function AdminOrderDetailsPage({
           </div>
         </div>
       </div>
-      {/* NEW: Drop the Tracking Logs Component here */}
-  <AdminTrackingLogs orderId={order.id} currentStatus={order.status} />
+
+      {/* 🔥 FIX: Passed currentStatus (safely defaulted to PENDING) instead of order.status */}
+      <AdminTrackingLogs orderId={order.id} currentStatus={currentStatus} />
 
       {/* 🔥 The Cancel Modal */}
-      <CancelOrderModal 
+      <CancelOrderModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         orderId={order.id}
         orderStatus={currentStatus}
-        onSuccess={() => mutate()} 
+        onSuccess={() => mutate()}
       />
     </>
   );

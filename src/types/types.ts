@@ -40,7 +40,8 @@ export interface Variant {
   id: string;
   name: string;
   stock: number;
-  priceModifier: number;
+  price: number;          // 🔥 ADDED: Strict price
+  oldPrice?: number;
 }
 
 export interface Product {
@@ -48,8 +49,6 @@ export interface Product {
   name: string;
   slug: string;
   description?: string;
-  price: number;
-  oldPrice?: number;
   images: string[];
   stock: number;
   category: Category | string; // Flexible for nested or flat data
