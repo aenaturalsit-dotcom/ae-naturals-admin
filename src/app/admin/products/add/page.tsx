@@ -6,15 +6,24 @@ import React, { useState } from "react";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { 
-  Save, ArrowLeft, Loader2, Upload, X, Plus, Trash2, Layers, ShieldAlert, Sparkles 
+import {
+  Save,
+  ArrowLeft,
+  Loader2,
+  Upload,
+  X,
+  Plus,
+  Trash2,
+  Layers,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { CldUploadWidget } from "next-cloudinary";
 
 import apiClient from "@/lib/api-client";
 import { adminProductService } from "@/services/admin-products.service";
 import APlusContentBuilder from "@/components/admin/APlusContentBuilder";
-import ProductHighlightsSelector from "@/components/admin/products/ProductHighlightsSelector"; 
+import ProductHighlightsSelector from "@/components/admin/products/ProductHighlightsSelector";
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -43,8 +52,6 @@ export default function AddProductPage() {
     defaultValues: {
       name: "",
       description: "",
-      price: "",
-      oldPrice: "",
       categoryId: "",
       storeId: "",
       ingredients: "",
@@ -55,20 +62,22 @@ export default function AddProductPage() {
       careInstructions: [{ value: "" }],
       deliveryInfo: [{ value: "" }],
       attributes: [{ name: "", value: "" }],
-      // 🔥 NEW: Expanded Variant Default Values
+      // 🔥 NEW: Expanded Variant Default Values (Price-First)
       variants: [
-        { 
-          name: "", 
-          sku: "", 
-          optionType: "Size", 
-          optionValue: "", 
-          priceModifier: 0, 
+        {
+          name: "",
+          sku: "",
+          optionType: "Size",
+          optionValue: "",
+          price: "", // Absolute price instead of modifier
+          oldPrice: "",
+          priceModifier: 0,
           stock: 10,
           shippingWeightKg: 0,
           lengthCm: 0,
           widthCm: 0,
-          heightCm: 0
-        }
+          heightCm: 0,
+        },
       ],
       extra: {
         manufacturer: "",
@@ -76,56 +85,82 @@ export default function AddProductPage() {
         safetyInfo: "",
         directions: "",
         legalDisclaimer: "",
-        aPlusContent: [] as any[] 
+        aPlusContent: [] as any[],
       },
-      shippingWeightKg: "",
-      lengthCm: "",
-      widthCm: "",
-      heightCm: "",
-    }
+      
+    },
   });
 
   const { register, control, handleSubmit, watch, setValue } = methods;
 
   // Dynamic Field Arrays
-  const { fields: careFields, append: appendCare, remove: removeCare } = useFieldArray({ control, name: "careInstructions" as any });
-  const { fields: deliveryFields, append: appendDelivery, remove: removeDelivery } = useFieldArray({ control, name: "deliveryInfo" as any });
-  const { fields: attrFields, append: appendAttr, remove: removeAttr } = useFieldArray({ control, name: "attributes" as any });
-  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: "variants" as any });
+  const {
+    fields: careFields,
+    append: appendCare,
+    remove: removeCare,
+  } = useFieldArray({ control, name: "careInstructions" as any });
+  const {
+    fields: deliveryFields,
+    append: appendDelivery,
+    remove: removeDelivery,
+  } = useFieldArray({ control, name: "deliveryInfo" as any });
+  const {
+    fields: attrFields,
+    append: appendAttr,
+    remove: removeAttr,
+  } = useFieldArray({ control, name: "attributes" as any });
+  const {
+    fields: variantFields,
+    append: appendVariant,
+    remove: removeVariant,
+  } = useFieldArray({ control, name: "variants" as any });
 
   // --- MUTATION ---
   const mutation = useMutation({
     mutationFn: async (formData: any) => {
-      if (images.length === 0) throw new Error("At least one image is required");
+      if (images.length === 0)
+        throw new Error("At least one image is required");
 
       const payload = {
         ...formData,
         isFeatured: formData.isFeatured,
-        price: parseFloat(formData.price),
-        oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+
+        // 🔒 SATISFY LEGACY BACKEND DTO: Root prices are hidden but injected to prevent 400 Errors
+        price: 0,
+        oldPrice: null,
+
         images: images,
         highlightIds: formData.highlightIds || [],
-        careInstructions: formData.careInstructions.map((i: any) => i.value).filter(Boolean),
-        deliveryInfo: formData.deliveryInfo.map((i: any) => i.value).filter(Boolean),
+        careInstructions: formData.careInstructions
+          .map((i: any) => i.value)
+          .filter(Boolean),
+        deliveryInfo: formData.deliveryInfo
+          .map((i: any) => i.value)
+          .filter(Boolean),
         attributes: formData.attributes.filter((a: any) => a.name && a.value),
+
         // 🔥 NEW: Expanded Variant Payload Parsing
-        variants: formData.variants.filter((v: any) => v.name).map((v: any) => ({
-          name: v.name,
-          sku: v.sku || null,
-          optionType: v.optionType || null,
-          optionValue: v.optionValue || null,
-          priceModifier: parseFloat(v.priceModifier || 0),
-          stock: parseInt(v.stock || 0),
-          shippingWeightKg: parseFloat(v.shippingWeightKg || 0),
-          lengthCm: parseFloat(v.lengthCm || 0),
-          widthCm: parseFloat(v.widthCm || 0),
-          heightCm: parseFloat(v.heightCm || 0)
-        })),
-        slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-        shippingWeightKg: parseFloat(formData.shippingWeightKg),
-        lengthCm: parseFloat(formData.lengthCm),
-        widthCm: parseFloat(formData.widthCm),
-        heightCm: parseFloat(formData.heightCm),
+        variants: formData.variants
+          .filter((v: any) => v.name)
+          .map((v: any) => ({
+            name: v.name,
+            sku: v.sku || null,
+            optionType: v.optionType || null,
+            optionValue: v.optionValue || null,
+            price: parseFloat(v.price) || 0, // Now sending absolute price
+            oldPrice: v.oldPrice ? parseFloat(v.oldPrice) : null,
+            priceModifier: 0, // ✅ Fixes the "priceModifier must be a number" constraint error
+            stock: parseInt(v.stock || 0),
+            shippingWeightKg: parseFloat(v.shippingWeightKg || 0),
+            lengthCm: parseFloat(v.lengthCm || 0),
+            widthCm: parseFloat(v.widthCm || 0),
+            heightCm: parseFloat(v.heightCm || 0),
+          })),
+        slug: formData.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, ""),
+     
       };
 
       return adminProductService.createProduct(payload);
@@ -136,140 +171,117 @@ export default function AddProductPage() {
       router.push("/admin/products");
     },
     onError: (error: any) => {
-      // 1. Dig into the Axios response to get the exact NestJS error message
       const backendMessage = error.response?.data?.message;
-
-      // 2. NestJS sometimes returns an array of errors, so we handle both arrays and strings
-      const finalMessage = Array.isArray(backendMessage) 
-        ? backendMessage.join('\n') 
+      const finalMessage = Array.isArray(backendMessage)
+        ? backendMessage.join("\n")
         : backendMessage || error.message || "An unexpected error occurred.";
 
-      // 3. Show the proper error to the user
       alert(`❌ ${finalMessage}`);
-    }
+    },
   });
 
   return (
     <div className="min-h-screen bg-white pb-24">
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10">
-          
+        <form
+          onSubmit={handleSubmit((data) => mutation.mutate(data))}
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10"
+        >
           {/* HEADER (Sticky) */}
           <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md py-4 border-b border-zinc-100 flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => router.back()} className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors"
+              >
                 <ArrowLeft size={20} className="text-zinc-600" />
               </button>
               <div>
-                <h1 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">Add New Product</h1>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">Master Catalog Management</p>
+                <h1 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">
+                  Add New Product
+                </h1>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em]">
+                  Master Catalog Management
+                </p>
               </div>
             </div>
-            <button 
-              type="submit" 
-              disabled={mutation.isPending || images.length === 0} 
+            <button
+              type="submit"
+              disabled={mutation.isPending || images.length === 0}
               className="bg-[#006044] text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-green-100 hover:bg-[#004d36] transition-all flex items-center gap-2 disabled:bg-zinc-300 disabled:shadow-none"
             >
-              {mutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-              {mutation.isPending ? 'PUBLISHING...' : 'PUBLISH TO CATALOG'}
+              {mutation.isPending ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Save size={18} />
+              )}
+              {mutation.isPending ? "PUBLISHING..." : "PUBLISH TO CATALOG"}
             </button>
           </div>
 
           {/* MAIN FORM GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
             {/* LEFT COLUMN (Wider) */}
             <div className="lg:col-span-2 space-y-8">
-              
-              {/* SECTION: BASIC INFO */}
+              {/* SECTION: BASIC INFO (Root pricing removed) */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2 space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Title *</label>
-                    <input {...register("name", { required: true })} placeholder="e.g. Organic Aloe Vera Gel" className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Base Selling Price *</label>
-                    <input {...register("price", { required: true })} type="number" step="0.01" placeholder="₹0.00" className="w-full p-4 border rounded-2xl outline-none font-black text-xl bg-white focus:ring-2 focus:ring-[#006044]" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">MRP (Old Price)</label>
-                    <input {...register("oldPrice")} type="number" step="0.01" placeholder="₹0.00" className="w-full p-4 border rounded-2xl outline-none text-zinc-400 font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
-                  </div>
-                </div>
-
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Description</label>
-                  <textarea {...register("description")} placeholder="Describe this product for your customers..." rows={5} className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white" />
-                </div>
-              </div>
-
-              {/* SHIPPING & LOGISTICS */}
-              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
-                <div className="space-y-1 border-b border-zinc-200 pb-4">
-                  <label className="text-xs font-black text-[#006044] uppercase tracking-widest flex items-center gap-2">
-                    📦 Base Shipping Dimensions
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Product Title *
                   </label>
-                  <p className="text-xs text-zinc-500 font-medium">
-                    These dimensions are required by Shiprocket to accurately calculate delivery charges and generate waybills.
-                  </p>
+                  <input
+                    {...register("name", { required: true })}
+                    placeholder="e.g. Organic Aloe Vera Gel"
+                    className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white"
+                  />
                 </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Weight (KG) *</label>
-                    <input 
-                      {...register("shippingWeightKg", { required: true, min: 0.01 })} 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 0.5" 
-                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Length (CM) *</label>
-                    <input 
-                      {...register("lengthCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 15" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Width (CM) *</label>
-                    <input 
-                      {...register("widthCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 10" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Height (CM) *</label>
-                    <input 
-                      {...register("heightCm", { required: true, min: 1 })} 
-                      type="number" 
-                      placeholder="e.g. 5" 
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]" 
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Product Description
+                  </label>
+                  <textarea
+                    {...register("description")}
+                    placeholder="Describe this product for your customers..."
+                    rows={5}
+                    className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white"
+                  />
                 </div>
               </div>
 
               {/* SECTION: IMAGES */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Image Gallery (Min 1) *</label>
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">
+                    Image Gallery (Min 1) *
+                  </label>
                 </div>
                 <div className="flex gap-4 flex-wrap">
                   {images.map((url, i) => (
-                    <div key={i} className="relative h-32 w-32 rounded-3xl overflow-hidden border shadow-sm group">
-                      <img src={url} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt={`upload-${i}`} />
-                      <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"><X size={14}/></button>
+                    <div
+                      key={i}
+                      className="relative h-32 w-32 rounded-3xl overflow-hidden border shadow-sm group"
+                    >
+                      <img
+                        src={url}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                        alt={`upload-${i}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImages(images.filter((_, idx) => idx !== i))
+                        }
+                        className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
-                  <CldUploadWidget 
-                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} 
+                  <CldUploadWidget
+                    uploadPreset={
+                      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+                    }
                     options={{ multiple: true }}
                     onSuccess={(result: any) => {
                       if (result.event === "success") {
@@ -278,9 +290,15 @@ export default function AddProductPage() {
                     }}
                   >
                     {({ open }) => (
-                      <button type="button" onClick={() => open()} className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent">
+                      <button
+                        type="button"
+                        onClick={() => open()}
+                        className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent"
+                      >
                         <Upload size={28} />
-                        <span className="text-[10px] font-black mt-2 tracking-widest uppercase">Add Photos</span>
+                        <span className="text-[10px] font-black mt-2 tracking-widest uppercase">
+                          Add Photos
+                        </span>
                       </button>
                     )}
                   </CldUploadWidget>
@@ -290,56 +308,99 @@ export default function AddProductPage() {
               {/* PRODUCT HIGHLIGHTS */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
                 <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                  <Sparkles size={18} className="text-[#006044]" /> Service Highlights
+                  <Sparkles size={18} className="text-[#006044]" /> Service
+                  Highlights
                 </label>
                 <div className="bg-white p-4 rounded-2xl border border-zinc-100">
-                  <ProductHighlightsSelector 
-                    selectedIds={watch('highlightIds')} 
-                    onChange={(ids: string[]) => setValue('highlightIds', ids)} 
+                  <ProductHighlightsSelector
+                    selectedIds={watch("highlightIds") || []}
+                    onChange={(ids: string[]) =>
+                      setValue("highlightIds", ids, { shouldDirty: true })
+                    }
                   />
                 </div>
               </div>
 
               {/* A+ CONTENT BUILDER */}
               <APlusContentBuilder />
-
             </div>
 
             {/* RIGHT COLUMN (Sidebar items) */}
             <div className="space-y-8">
-
               {/* SECTION: ASSIGNMENT & STATUS */}
               <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Store *</label>
-                  <select {...register("storeId", { required: true })} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Select Store *
+                  </label>
+                  <select
+                    {...register("storeId", { required: true })}
+                    className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm"
+                  >
                     <option value="">Choose Store</option>
-                    {Array.isArray(stores) && stores.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {Array.isArray(stores) &&
+                      stores.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Category *</label>
-                  <select {...register("categoryId", { required: true })} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Select Category *
+                  </label>
+                  <select
+                    {...register("categoryId", { required: true })}
+                    className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm"
+                  >
                     <option value="">Choose Category</option>
-                    {Array.isArray(categories) && categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    {Array.isArray(categories) &&
+                      categories.map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer">
-                  <input type="checkbox" {...register("isActive")} className="w-5 h-5 accent-[#006044]" />
-                  <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Set Product Live</span>
+                  <input
+                    type="checkbox"
+                    {...register("isActive")}
+                    className="w-5 h-5 accent-[#006044]"
+                  />
+                  <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">
+                    Set Product Live
+                  </span>
                 </label>
                 <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
-  <input type="checkbox" {...register("isCodEnabled")} className="w-5 h-5 accent-[#006044]" />
-  <div className="flex flex-col">
-    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Allow COD</span>
-    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">Customers can pay with Cash on Delivery</span>
-  </div>
-</label>
-                <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
-                  <input type="checkbox" {...register("isFeatured")} className="w-5 h-5 accent-[#006044]" />
+                  <input
+                    type="checkbox"
+                    {...register("isCodEnabled")}
+                    className="w-5 h-5 accent-[#006044]"
+                  />
                   <div className="flex flex-col">
-                    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Featured Product</span>
-                    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">Show in Storefront Carousel</span>
+                    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">
+                      Allow COD
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                      Customers can pay with Cash on Delivery
+                    </span>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
+                  <input
+                    type="checkbox"
+                    {...register("isFeatured")}
+                    className="w-5 h-5 accent-[#006044]"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">
+                      Featured Product
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                      Show in Storefront Carousel
+                    </span>
                   </div>
                 </label>
               </div>
@@ -350,123 +411,185 @@ export default function AddProductPage() {
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                     <Layers size={18} className="text-[#006044]" /> Variants
                   </label>
-                  <button 
-                    type="button" 
-                    onClick={() => appendVariant({ 
-                      name: "", sku: "", optionType: "Size", optionValue: "", 
-                      priceModifier: 0, stock: 10, shippingWeightKg: 0, 
-                      lengthCm: 0, widthCm: 0, heightCm: 0 
-                    })} 
+                  <button
+                    type="button"
+                    onClick={() =>
+                      appendVariant({
+                        name: "",
+                        sku: "",
+                        optionType: "Size",
+                        optionValue: "",
+                        price: "",
+                        oldPrice: "",
+                        priceModifier: 0,
+                        stock: 10,
+                        shippingWeightKg: 0,
+                        lengthCm: 0,
+                        widthCm: 0,
+                        heightCm: 0,
+                      })
+                    }
                     className="text-[10px] font-black bg-white border px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-all"
                   >
                     + ADD VARIANT
                   </button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {variantFields.map((field, index) => (
-                    <div key={field.id} className="bg-white p-4 rounded-2xl border border-zinc-200 space-y-3 relative shadow-sm">
-                      <button 
-                        type="button" 
-                        onClick={() => removeVariant(index)} 
-                        className="absolute top-3 right-3 text-zinc-300 hover:text-rose-500 bg-zinc-50 rounded-full p-1 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
+                    <div
+                      key={field.id}
+                      className="bg-white p-4 rounded-2xl border border-zinc-200 space-y-3 relative shadow-sm"
+                    >
+                      {variantFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          className="absolute top-3 right-3 text-zinc-300 hover:text-rose-500 bg-zinc-50 rounded-full p-1 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+
                       <div className="grid grid-cols-2 gap-3 pr-6">
                         <div className="col-span-2">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Variant Name</label>
-                          <input 
-                            {...register(`variants.${index}.name` as any)} 
-                            placeholder="e.g. 500ml Pack" 
-                            className="w-full p-2 outline-none text-xs font-bold border-b border-zinc-100 focus:border-[#006044] transition-colors" 
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Variant Name
+                          </label>
+                          <input
+                            {...register(`variants.${index}.name` as any)}
+                            placeholder="e.g. 500ml Pack"
+                            className="w-full p-2 outline-none text-xs font-bold border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">SKU</label>
-                          <input 
-                            {...register(`variants.${index}.sku` as any)} 
-                            placeholder="SKU" 
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors" 
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            SKU
+                          </label>
+                          <input
+                            {...register(`variants.${index}.sku` as any)}
+                            placeholder="SKU"
+                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Stock</label>
-                          <input 
-                            {...register(`variants.${index}.stock` as any)} 
-                            type="number" 
-                            placeholder="Qty" 
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors" 
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Stock
+                          </label>
+                          <input
+                            {...register(`variants.${index}.stock` as any)}
+                            type="number"
+                            placeholder="Qty"
+                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Option Type</label>
-                          <input 
-                            {...register(`variants.${index}.optionType` as any)} 
-                            placeholder="e.g. Size" 
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors" 
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Option Type
+                          </label>
+                          <input
+                            {...register(`variants.${index}.optionType` as any)}
+                            placeholder="e.g. Size"
+                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Value</label>
-                          <input 
-                            {...register(`variants.${index}.optionValue` as any)} 
-                            placeholder="e.g. 500ml" 
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors" 
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Value
+                          </label>
+                          <input
+                            {...register(
+                              `variants.${index}.optionValue` as any,
+                            )}
+                            placeholder="e.g. 500ml"
+                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Price Modifier (+/-)</label>
-                          <input 
-                            {...register(`variants.${index}.priceModifier` as any)} 
-                            type="number" 
-                            placeholder="0" 
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 font-bold text-[#006044] focus:border-[#006044] transition-colors" 
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="bg-zinc-50 p-3 rounded-xl grid grid-cols-4 gap-2 border border-zinc-100">
-                        <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">WT(kg)</label>
-                          <input 
-                            {...register(`variants.${index}.shippingWeightKg` as any, { valueAsNumber: true })} 
-                            type="number" 
-                            step="0.01" 
-                            placeholder="0" 
-                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" 
-                          />
-                        </div>
-                        <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">L(cm)</label>
-                          <input 
-                            {...register(`variants.${index}.lengthCm` as any, { valueAsNumber: true })} 
-                            type="number" 
-                            placeholder="0" 
-                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" 
-                          />
-                        </div>
-                        <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">W(cm)</label>
-                          <input 
-                            {...register(`variants.${index}.widthCm` as any, { valueAsNumber: true })} 
-                            type="number" 
-                            placeholder="0" 
-                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" 
-                          />
-                        </div>
-                        <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">H(cm)</label>
-                          <input 
-                            {...register(`variants.${index}.heightCm` as any, { valueAsNumber: true })} 
-                            type="number" 
-                            placeholder="0" 
-                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" 
-                          />
+
+                        <div className="col-span-2 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                              Variant Price (₹)
+                            </label>
+                            <input
+                              {...register(`variants.${index}.price` as any)}
+                              type="number"
+                              step="0.01"
+                              placeholder="Absolute Price"
+                              className="w-full p-2 outline-none text-xs border-b border-zinc-100 font-bold text-[#006044] focus:border-[#006044] transition-colors"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                              Variant MRP (₹)
+                            </label>
+                            <input
+                              {...register(`variants.${index}.oldPrice` as any)}
+                              type="number"
+                              step="0.01"
+                              placeholder="Old Price"
+                              className="w-full p-2 outline-none text-xs border-b border-zinc-100 text-zinc-400 font-bold focus:border-[#006044] transition-colors"
+                            />
+                          </div>
                         </div>
                       </div>
 
+                      <div className="bg-zinc-50 p-3 rounded-xl grid grid-cols-4 gap-2 border border-zinc-100">
+                        <div className="text-center">
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            WT(kg)
+                          </label>
+                          <input
+                            {...register(
+                              `variants.${index}.shippingWeightKg` as any,
+                              { valueAsNumber: true },
+                            )}
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            L(cm)
+                          </label>
+                          <input
+                            {...register(`variants.${index}.lengthCm` as any, {
+                              valueAsNumber: true,
+                            })}
+                            type="number"
+                            placeholder="0"
+                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            W(cm)
+                          </label>
+                          <input
+                            {...register(`variants.${index}.widthCm` as any, {
+                              valueAsNumber: true,
+                            })}
+                            type="number"
+                            placeholder="0"
+                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            H(cm)
+                          </label>
+                          <input
+                            {...register(`variants.${index}.heightCm` as any, {
+                              valueAsNumber: true,
+                            })}
+                            type="number"
+                            placeholder="0"
+                            className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -475,28 +598,59 @@ export default function AddProductPage() {
               {/* SECTION: COMPLIANCE & EXTRA INFO */}
               <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-4">
                 <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                  <ShieldAlert size={18} className="text-[#006044]" /> Extra Details
+                  <ShieldAlert size={18} className="text-[#006044]" /> Extra
+                  Details
                 </label>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Manufacturer</label>
-                    <input {...register("extra.manufacturer")} placeholder="e.g. AE Naturals" className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Manufacturer
+                    </label>
+                    <input
+                      {...register("extra.manufacturer")}
+                      placeholder="e.g. AE Naturals"
+                      className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Origin</label>
-                    <input {...register("extra.countryOfOrigin")} placeholder="e.g. India" className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]" />
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Origin
+                    </label>
+                    <input
+                      {...register("extra.countryOfOrigin")}
+                      placeholder="e.g. India"
+                      className="w-full p-3 border rounded-xl outline-none text-sm font-bold bg-white focus:ring-2 focus:ring-[#006044]"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Directions to Use</label>
-                    <textarea {...register("extra.directions")} rows={2} className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]" />
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Directions to Use
+                    </label>
+                    <textarea
+                      {...register("extra.directions")}
+                      rows={2}
+                      className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Safety Info</label>
-                    <textarea {...register("extra.safetyInfo")} rows={2} className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]" />
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Safety Info
+                    </label>
+                    <textarea
+                      {...register("extra.safetyInfo")}
+                      rows={2}
+                      className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Legal Disclaimer</label>
-                    <textarea {...register("extra.legalDisclaimer")} rows={2} className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]" />
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                      Legal Disclaimer
+                    </label>
+                    <textarea
+                      {...register("extra.legalDisclaimer")}
+                      rows={2}
+                      className="w-full p-3 border rounded-xl outline-none text-sm font-medium bg-white focus:ring-2 focus:ring-[#006044]"
+                    />
                   </div>
                 </div>
               </div>
@@ -504,17 +658,40 @@ export default function AddProductPage() {
               {/* SECTION: SPECIFICATIONS */}
               <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Tech Specs</label>
-                  <button type="button" onClick={() => appendAttr({ name: "", value: "" })} className="text-[10px] font-black bg-white border px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-all">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">
+                    Tech Specs
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => appendAttr({ name: "", value: "" })}
+                    className="text-[10px] font-black bg-white border px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-all"
+                  >
                     + ADD
                   </button>
                 </div>
                 <div className="space-y-3">
                   {attrFields.map((field, index) => (
-                    <div key={field.id} className="flex items-center bg-white p-2 rounded-2xl border">
-                      <input {...register(`attributes.${index}.name` as any)} placeholder="Key (e.g. Size)" className="w-1/2 p-2 outline-none text-xs font-black uppercase tracking-tighter" />
-                      <input {...register(`attributes.${index}.value` as any)} placeholder="Value" className="w-1/2 p-2 outline-none text-xs font-bold border-l" />
-                      <button type="button" onClick={() => removeAttr(index)} className="p-2 text-zinc-300 hover:text-rose-500"><Trash2 size={16}/></button>
+                    <div
+                      key={field.id}
+                      className="flex items-center bg-white p-2 rounded-2xl border"
+                    >
+                      <input
+                        {...register(`attributes.${index}.name` as any)}
+                        placeholder="Key (e.g. Size)"
+                        className="w-1/2 p-2 outline-none text-xs font-black uppercase tracking-tighter"
+                      />
+                      <input
+                        {...register(`attributes.${index}.value` as any)}
+                        placeholder="Value"
+                        className="w-1/2 p-2 outline-none text-xs font-bold border-l"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAttr(index)}
+                        className="p-2 text-zinc-300 hover:text-rose-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -523,25 +700,64 @@ export default function AddProductPage() {
               {/* CARE & DELIVERY */}
               <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-6">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">Care Rules <Plus size={14} className="cursor-pointer text-green-600 bg-green-100 rounded-full p-0.5" onClick={() => appendCare({ value: "" })}/></label>
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">
+                    Care Rules{" "}
+                    <Plus
+                      size={14}
+                      className="cursor-pointer text-green-600 bg-green-100 rounded-full p-0.5"
+                      onClick={() => appendCare({ value: "" })}
+                    />
+                  </label>
                   {careFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center">
-                      <input {...register(`careInstructions.${index}.value` as any)} placeholder="e.g. Keep dry" className="flex-1 p-2 outline-none text-xs font-bold" />
-                      <button type="button" onClick={() => removeCare(index)} className="text-zinc-300 hover:text-rose-500"><X size={14}/></button>
+                    <div
+                      key={field.id}
+                      className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center"
+                    >
+                      <input
+                        {...register(`careInstructions.${index}.value` as any)}
+                        placeholder="e.g. Keep dry"
+                        className="flex-1 p-2 outline-none text-xs font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeCare(index)}
+                        className="text-zinc-300 hover:text-rose-500"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">Delivery Rules <Plus size={14} className="cursor-pointer text-blue-600 bg-blue-100 rounded-full p-0.5" onClick={() => appendDelivery({ value: "" })}/></label>
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex justify-between items-center">
+                    Delivery Rules{" "}
+                    <Plus
+                      size={14}
+                      className="cursor-pointer text-blue-600 bg-blue-100 rounded-full p-0.5"
+                      onClick={() => appendDelivery({ value: "" })}
+                    />
+                  </label>
                   {deliveryFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center">
-                      <input {...register(`deliveryInfo.${index}.value` as any)} placeholder="e.g. Free shipping" className="flex-1 p-2 outline-none text-xs font-bold" />
-                      <button type="button" onClick={() => removeDelivery(index)} className="text-zinc-300 hover:text-rose-500"><X size={14}/></button>
+                    <div
+                      key={field.id}
+                      className="flex gap-2 bg-white border rounded-xl p-1 pr-2 items-center"
+                    >
+                      <input
+                        {...register(`deliveryInfo.${index}.value` as any)}
+                        placeholder="e.g. Free shipping"
+                        className="flex-1 p-2 outline-none text-xs font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeDelivery(index)}
+                        className="text-zinc-300 hover:text-rose-500"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
-
             </div>
           </div>
         </form>

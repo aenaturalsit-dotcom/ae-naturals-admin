@@ -1,5 +1,3 @@
-// src/app/admin/products/edit/[id]/page.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -35,9 +33,7 @@ export default function EditProductPage() {
     queryKey: ["product-highlights-edit", id],
     queryFn: async () => {
       const res = await apiClient.get(`/products/${id}/highlights`);
-      // Fix: If apiClient returns the array directly, use it. Otherwise fallback to res.data
       const data = Array.isArray(res) ? res : res?.data || [];
-      console.log("Fetched existing highlights for product:", data);
       return data;
     },
     enabled: !!id,
@@ -62,7 +58,6 @@ export default function EditProductPage() {
       const found = Array.isArray(data)
         ? data.find((p: any) => p.id === id)
         : null;
-        console.log("Fetched product data for editing:", found);
       if (!found) throw new Error("Product not found");
       return found;
     },
@@ -74,18 +69,13 @@ export default function EditProductPage() {
       ? {
           name: product.name || "",
           description: product.description || "",
-          price: product.price?.toString() || "",
-          oldPrice: product.oldPrice?.toString() || "",
           categoryId: product.categoryId || "",
           storeId: product.storeId || "",
           ingredients: product.extra?.ingredients || product.ingredients || "",
           isActive: product.isActive ?? true,
           isFeatured: product.isFeatured ?? false,
           highlightIds: existingHighlights?.map((h: any) => h.id) || [],
-          shippingWeightKg: product.shippingWeightKg?.toString() || "",
-          lengthCm: product.lengthCm?.toString() || "",
-          widthCm: product.widthCm?.toString() || "",
-          heightCm: product.heightCm?.toString() || "",
+         
           isCodEnabled: product.isCodEnabled ?? true,
           careInstructions: product.careInstructions?.length
             ? product.careInstructions.map((v: string) => ({ value: v }))
@@ -96,15 +86,21 @@ export default function EditProductPage() {
           attributes: product.attributes?.length
             ? product.attributes
             : [{ name: "", value: "" }],
-          // 🔥 NEW: Expanded Variant Default Values
+          // 🔥 NEW: Variant Default Values (Inherits legacy root prices safely)
           variants: product.variants?.length
-            ? product.variants
+            ? product.variants.map((v: any) => ({
+                ...v,
+                price: v.price?.toString() || (product.price + (v.priceModifier || 0)).toString(),
+                oldPrice: v.oldPrice?.toString() || product.oldPrice?.toString() || "",
+              }))
             : [
                 {
                   name: "",
                   sku: "",
                   optionType: "Size",
                   optionValue: "",
+                  price: product.price?.toString() || "", // Auto-fill from legacy root
+                  oldPrice: product.oldPrice?.toString() || "", // Auto-fill from legacy root
                   priceModifier: 0,
                   stock: 10,
                   shippingWeightKg: 0,
@@ -165,12 +161,10 @@ export default function EditProductPage() {
       const payload = {
         ...formData,
         isFeatured: formData.isFeatured,
-        price: parseFloat(formData.price),
-        oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
-        shippingWeightKg: parseFloat(formData.shippingWeightKg),
-        lengthCm: parseFloat(formData.lengthCm),
-        widthCm: parseFloat(formData.widthCm),
-        heightCm: parseFloat(formData.heightCm),
+        
+        
+
+      
         images: images,
         highlightIds: formData.highlightIds || [],
         careInstructions: formData.careInstructions
@@ -186,11 +180,14 @@ export default function EditProductPage() {
         variants: formData.variants
           .filter((v: any) => v.name)
           .map((v: any) => ({
+            id: v.id || undefined,
             name: v.name,
             sku: v.sku || null,
             optionType: v.optionType || null,
             optionValue: v.optionValue || null,
-            priceModifier: parseFloat(v.priceModifier || 0),
+            price: parseFloat(v.price) || 0, // Now sending absolute price
+            oldPrice: v.oldPrice ? parseFloat(v.oldPrice) : null,
+            priceModifier: 0, // ✅ Fixes the "priceModifier must be a number" constraint error
             stock: parseInt(v.stock || 0),
             shippingWeightKg: parseFloat(v.shippingWeightKg || 0),
             lengthCm: parseFloat(v.lengthCm || 0),
@@ -208,19 +205,17 @@ export default function EditProductPage() {
       router.push("/admin/products");
     },
     onError: (error: any) => {
-      // Safely extract the exact message from the NestJS backend response
-      const backendMessage = 
-        error.response?.data?.message || 
-        error.message || 
+      const backendMessage =
+        error.response?.data?.message ||
+        error.message ||
         "Failed to save product.";
 
-      // NestJS ValidationPipe sometimes returns an array of errors, so we handle both strings and arrays safely
-      const finalMessage = Array.isArray(backendMessage) 
-        ? backendMessage.join(', ') 
+      const finalMessage = Array.isArray(backendMessage)
+        ? backendMessage.join(", ")
         : backendMessage;
 
       alert(`❌ ${finalMessage}`);
-    }
+    },
   });
 
   if (isProductLoading) {
@@ -278,42 +273,17 @@ export default function EditProductPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* LEFT COLUMN */}
             <div className="lg:col-span-2 space-y-8">
-              {/* SECTION: BASIC INFO */}
+              {/* SECTION: BASIC INFO (Root pricing removed) */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2 space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Product Title *
-                    </label>
-                    <input
-                      {...register("name", { required: true })}
-                      className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Base Selling Price *
-                    </label>
-                    <input
-                      {...register("price", { required: true })}
-                      type="number"
-                      step="0.01"
-                      className="w-full p-4 border rounded-2xl outline-none font-black text-xl bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      MRP (Old Price)
-                    </label>
-                    <input
-                      {...register("oldPrice")}
-                      type="number"
-                      step="0.01"
-                      className="w-full p-4 border rounded-2xl outline-none text-zinc-400 font-bold bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Product Title *
+                  </label>
+                  <input
+                    {...register("name", { required: true })}
+                    className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white"
+                  />
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                     Product Description
@@ -326,69 +296,7 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              {/* SHIPPING & LOGISTICS */}
-              <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
-                <div className="space-y-1 border-b border-zinc-200 pb-4">
-                  <label className="text-xs font-black text-[#006044] uppercase tracking-widest flex items-center gap-2">
-                    📦 Base Shipping Dimensions
-                  </label>
-                  <p className="text-xs text-zinc-500 font-medium">
-                    These dimensions are required by Shiprocket to accurately
-                    calculate delivery charges and generate waybills.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Weight (KG) *
-                    </label>
-                    <input
-                      {...register("shippingWeightKg", {
-                        required: true,
-                        min: 0.01,
-                      })}
-                      type="number"
-                      step="0.01"
-                      placeholder="e.g. 0.5"
-                      className="w-full p-4 border rounded-2xl outline-none font-black text-lg bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Length (CM) *
-                    </label>
-                    <input
-                      {...register("lengthCm", { required: true, min: 1 })}
-                      type="number"
-                      placeholder="e.g. 15"
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Width (CM) *
-                    </label>
-                    <input
-                      {...register("widthCm", { required: true, min: 1 })}
-                      type="number"
-                      placeholder="e.g. 10"
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                      Height (CM) *
-                    </label>
-                    <input
-                      {...register("heightCm", { required: true, min: 1 })}
-                      type="number"
-                      placeholder="e.g. 5"
-                      className="w-full p-4 border rounded-2xl outline-none font-bold text-lg bg-white focus:ring-2 focus:ring-[#006044]"
-                    />
-                  </div>
-                </div>
-              </div>
+            
 
               {/* SECTION: IMAGES */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
@@ -515,12 +423,20 @@ export default function EditProductPage() {
                   </span>
                 </label>
                 <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
-  <input type="checkbox" {...register("isCodEnabled")} className="w-5 h-5 accent-[#006044]" />
-  <div className="flex flex-col">
-    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">Allow COD</span>
-    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">Customers can pay with Cash on Delivery</span>
-  </div>
-</label>
+                  <input
+                    type="checkbox"
+                    {...register("isCodEnabled")}
+                    className="w-5 h-5 accent-[#006044]"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black text-zinc-600 uppercase tracking-tight">
+                      Allow COD
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                      Customers can pay with Cash on Delivery
+                    </span>
+                  </div>
+                </label>
                 <label className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-zinc-100 cursor-pointer hover:border-[#006044] transition-colors">
                   <input
                     type="checkbox"
@@ -565,21 +481,28 @@ export default function EditProductPage() {
                     + ADD VARIANT
                   </button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {variantFields.map((field, index) => (
-                    <div key={field.id} className="bg-white p-4 rounded-2xl border border-zinc-200 space-y-3 relative shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(index)}
-                        className="absolute top-3 right-3 text-zinc-300 hover:text-rose-500 bg-zinc-50 rounded-full p-1 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
+                    <div
+                      key={field.id}
+                      className="bg-white p-4 rounded-2xl border border-zinc-200 space-y-3 relative shadow-sm"
+                    >
+                      {variantFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(index)}
+                          className="absolute top-3 right-3 text-zinc-300 hover:text-rose-500 bg-zinc-50 rounded-full p-1 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+
                       <div className="grid grid-cols-2 gap-3 pr-6">
                         <div className="col-span-2">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Variant Name</label>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Variant Name
+                          </label>
                           <input
                             {...register(`variants.${index}.name` as any)}
                             placeholder="e.g. 500ml Pack"
@@ -587,7 +510,9 @@ export default function EditProductPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">SKU</label>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            SKU
+                          </label>
                           <input
                             {...register(`variants.${index}.sku` as any)}
                             placeholder="SKU"
@@ -595,7 +520,9 @@ export default function EditProductPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Stock</label>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Stock
+                          </label>
                           <input
                             {...register(`variants.${index}.stock` as any)}
                             type="number"
@@ -604,7 +531,9 @@ export default function EditProductPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Option Type</label>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Option Type
+                          </label>
                           <input
                             {...register(`variants.${index}.optionType` as any)}
                             placeholder="e.g. Size"
@@ -612,29 +541,55 @@ export default function EditProductPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Value</label>
+                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                            Value
+                          </label>
                           <input
-                            {...register(`variants.${index}.optionValue` as any)}
+                            {...register(
+                              `variants.${index}.optionValue` as any,
+                            )}
                             placeholder="e.g. 500ml"
                             className="w-full p-2 outline-none text-xs border-b border-zinc-100 focus:border-[#006044] transition-colors"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">Price Modifier (+/-)</label>
-                          <input
-                            {...register(`variants.${index}.priceModifier` as any)}
-                            type="number"
-                            placeholder="0"
-                            className="w-full p-2 outline-none text-xs border-b border-zinc-100 font-bold text-[#006044] focus:border-[#006044] transition-colors"
-                          />
+                        <div className="col-span-2 grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                              Variant Price (₹)
+                            </label>
+                            <input
+                              {...register(`variants.${index}.price` as any)}
+                              type="number"
+                              step="0.01"
+                              placeholder="Absolute Price"
+                              className="w-full p-2 outline-none text-xs border-b border-zinc-100 font-bold text-[#006044] focus:border-[#006044] transition-colors"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-zinc-400 uppercase ml-1">
+                              Variant MRP (₹)
+                            </label>
+                            <input
+                              {...register(`variants.${index}.oldPrice` as any)}
+                              type="number"
+                              step="0.01"
+                              placeholder="Old Price"
+                              className="w-full p-2 outline-none text-xs border-b border-zinc-100 text-zinc-400 font-bold focus:border-[#006044] transition-colors"
+                            />
+                          </div>
                         </div>
                       </div>
-                      
+
                       <div className="bg-zinc-50 p-3 rounded-xl grid grid-cols-4 gap-2 border border-zinc-100">
                         <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">WT(kg)</label>
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            WT(kg)
+                          </label>
                           <input
-                            {...register(`variants.${index}.shippingWeightKg` as any, { valueAsNumber: true })}
+                            {...register(
+                              `variants.${index}.shippingWeightKg` as any,
+                              { valueAsNumber: true },
+                            )}
                             type="number"
                             step="0.01"
                             placeholder="0"
@@ -642,27 +597,39 @@ export default function EditProductPage() {
                           />
                         </div>
                         <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">L(cm)</label>
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            L(cm)
+                          </label>
                           <input
-                            {...register(`variants.${index}.lengthCm` as any, { valueAsNumber: true })}
+                            {...register(`variants.${index}.lengthCm` as any, {
+                              valueAsNumber: true,
+                            })}
                             type="number"
                             placeholder="0"
                             className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
                           />
                         </div>
                         <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">W(cm)</label>
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            W(cm)
+                          </label>
                           <input
-                            {...register(`variants.${index}.widthCm` as any, { valueAsNumber: true })}
+                            {...register(`variants.${index}.widthCm` as any, {
+                              valueAsNumber: true,
+                            })}
                             type="number"
                             placeholder="0"
                             className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"
                           />
                         </div>
                         <div className="text-center">
-                          <label className="text-[8px] font-black text-zinc-400 uppercase">H(cm)</label>
+                          <label className="text-[8px] font-black text-zinc-400 uppercase">
+                            H(cm)
+                          </label>
                           <input
-                            {...register(`variants.${index}.heightCm` as any, { valueAsNumber: true })}
+                            {...register(`variants.${index}.heightCm` as any, {
+                              valueAsNumber: true,
+                            })}
                             type="number"
                             placeholder="0"
                             className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]"

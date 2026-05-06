@@ -1,11 +1,11 @@
-// src\app\admin\orders\AdminTrackingLogs.tsx
+// src/app/admin/orders/AdminTrackingLogs.tsx
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { RefreshCcw, FileJson, AlertCircle } from 'lucide-react';
-import  apiClient  from '@/lib/api-client'; // Adjust import based on your setup
+import apiClient from '@/lib/api-client'; // Adjust import based on your setup
 
 export const AdminTrackingLogs = ({ orderId, currentStatus }: { orderId: string, currentStatus: string }) => {
   const [logs, setLogs] = useState<any[]>([]);
@@ -16,16 +16,21 @@ export const AdminTrackingLogs = ({ orderId, currentStatus }: { orderId: string,
   const fetchLogs = async () => {
     try {
       const { data } = await apiClient.get(`/admin/orders/${orderId}/tracking-logs`);
-      setLogs(data);
+      // 🔥 FIX: Guarantee that we are setting an array in state. 
+      // If the backend returns undefined, null, or a plain object, fallback to [].
+      setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch tracking logs', error);
+      setLogs([]); // Fallback to empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs();
+    if (orderId) {
+      fetchLogs();
+    }
   }, [orderId]);
 
   const handleRetryShipment = async () => {
@@ -44,6 +49,9 @@ export const AdminTrackingLogs = ({ orderId, currentStatus }: { orderId: string,
   };
 
   if (loading) return <div className="p-4 text-gray-500 animate-pulse">Loading audit trail...</div>;
+
+  // 🔥 FIX: Secondary safety net before rendering
+  const safeLogs = Array.isArray(logs) ? logs : [];
 
   return (
     <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mt-6">
@@ -66,7 +74,7 @@ export const AdminTrackingLogs = ({ orderId, currentStatus }: { orderId: string,
         )}
       </div>
 
-      {logs.length === 0 ? (
+      {safeLogs.length === 0 ? (
         <div className="p-8 text-center text-gray-500">
           <AlertCircle className="mx-auto h-8 w-8 text-gray-400 mb-2" />
           <p>No tracking events recorded yet.</p>
@@ -84,7 +92,7 @@ export const AdminTrackingLogs = ({ orderId, currentStatus }: { orderId: string,
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {logs.map((log) => (
+              {safeLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {format(new Date(log.eventTimestamp), 'MMM dd, yyyy HH:mm:ss')}
