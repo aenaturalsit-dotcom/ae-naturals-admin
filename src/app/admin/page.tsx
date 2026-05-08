@@ -6,10 +6,11 @@ import { adminService } from '@/services/admin.service';
 
 export default function AdminDashboard() {
   // TanStack Query v5 requires the object signature
-  const { data: stats, isLoading, error } = useQuery({ 
-    queryKey: ['admin-stats'], 
-    queryFn: () => adminService.getStats() 
-  });
+ const { data: stats, isLoading, error } = useQuery({
+  queryKey: ['admin-stats'],
+  queryFn: adminService.getStats,
+  refetchOnWindowFocus: false,
+});
 
   if (isLoading) {
     return (

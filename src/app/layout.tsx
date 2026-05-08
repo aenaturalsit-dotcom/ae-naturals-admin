@@ -7,9 +7,23 @@ import { cn } from "@/lib/utils";
 import AuthProvider from "@/components/admin/providers/AuthProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
+import { Metadata } from "next";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
-
+export const metadata: Metadata = {
+  title: "AE Naturals | Nature’s Finest Products",
+description: "Premium natural products crafted for wellness, skincare, haircare, and everyday healthy living.",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: {
+      url: "/apple-touch-icon.png",
+      sizes: "180x180",
+    },
+  },
+};
 export default async function RootLayout({
   children,
 }: {
