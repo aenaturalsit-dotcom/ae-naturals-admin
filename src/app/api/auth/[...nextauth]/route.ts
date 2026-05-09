@@ -2,10 +2,20 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { cookies } from "next/headers"; // 1. Import cookies
+
+
+
+
+
+// 1. Grab the days from the env variable (default to 7)
+const MAX_AGE_DAYS = parseInt(process.env.REFRESH_TOKEN_MAX_AGE_DAYS || "7", 10);
+// 2. Convert those days into seconds
+const COOKIE_MAX_AGE_SECONDS = MAX_AGE_DAYS * 24 * 60 * 60;
+
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-  // debug: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -23,6 +33,27 @@ export const authOptions: NextAuthOptions = {
           body: JSON.stringify(credentials),
           headers: { "Content-Type": "application/json" },
         });
+        
+        // 2. Extract and forward the Set-Cookie header to the browser
+        const setCookieHeader = res.headers.get("set-cookie");
+        
+        if (setCookieHeader) {
+          // Adjust the regex if your backend names the cookie differently
+          const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
+          
+          if (refreshTokenMatch) {
+            const cookieStore = await cookies();
+            cookieStore.set({
+              name: "refresh_token",
+              value: refreshTokenMatch[1],
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              path: "/",
+              maxAge: COOKIE_MAX_AGE_SECONDS, // Match this with your backend's refresh token lifespan
+            });
+          }
+        }
+
         const data = await res.json();
         if (res.ok && data.user?.role === "ADMIN") {
           return { ...data.user, accessToken: data.access_token };
@@ -32,28 +63,42 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-   // ... inside callbacks
-async signIn({ user, account }: any) {
-  if (account?.provider === "google") {
-    try {
-      // This is a server-side fetch. 
-      // Ensure your Backend check-admin endpoint is publicly reachable 
-      // OR secured with a private API KEY header.
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-admin?email=${user.email}`);
-      const data = await res.json();
+    async signIn({ user, account }: any) {
+      if (account?.provider === "google") {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-admin?email=${user.email}`);
+          
+          // 🔥 Apply the identical Cookie forwarding logic here if your 
+          // backend also issues a refresh_token during Google Auth!
+          const setCookieHeader = res.headers.get("set-cookie");
+          if (setCookieHeader) {
+             const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
+             if (refreshTokenMatch) {
+               const cookieStore = await cookies();
+               cookieStore.set({
+                 name: "refresh_token",
+                 value: refreshTokenMatch[1],
+                 httpOnly: true,
+                 secure: process.env.NODE_ENV === "production",
+                 path: "/",
+                 maxAge: COOKIE_MAX_AGE_SECONDS,
+               });
+             }
+          }
 
-      if (data.isAdmin && data.accessToken) {
-        user.accessToken = data.accessToken;
-        user.role = "ADMIN";
-        return true;
+          const data = await res.json();
+          if (data.isAdmin && data.accessToken) {
+            user.accessToken = data.accessToken;
+            user.role = "ADMIN";
+            return true;
+          }
+          return false; 
+        } catch (error) {
+          return false;
+        }
       }
-      return false; 
-    } catch (error) {
-      return false;
-    }
-  }
-  return true;
-},
+      return true;
+    },
     async jwt({ token, user }: any) {
       if (user) {
         token.role = user.role;

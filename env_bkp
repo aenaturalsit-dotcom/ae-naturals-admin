@@ -16,3 +16,6 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=rrjfdhjknk,jvre
 
 
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=flbhbjhhbjkdfj
+
+# Refresh token cookie lifespan in days
+REFRESH_TOKEN_MAX_AGE_DAYS=7
