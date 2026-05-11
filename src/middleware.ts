@@ -5,12 +5,12 @@ import { NextResponse } from "next/server";
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
-    const isAdmin = token?.role === "ADMIN";
+    const isStoreManager = token?.role === "STORE_MANAGER";
 
-    // If they are authenticated but not an ADMIN, redirect to login with an error
+    // If they are authenticated but not an STORE_MANAGER, redirect to login with an error
     if (req.nextUrl.pathname.startsWith("/admin") && 
         req.nextUrl.pathname !== "/admin/login" && 
-        !isAdmin) {
+        !isStoreManager) {
       return NextResponse.redirect(new URL("/admin/login?error=AccessDenied", req.url));
     }
   },

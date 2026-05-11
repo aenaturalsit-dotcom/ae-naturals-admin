@@ -79,7 +79,7 @@ export default function OrderDetails({ order, onUpdate }: OrderDetailsProps) {
           </p>
         </div>
 
-        {/* ADMIN ACTION BUTTONS (Dynamic) */}
+        {/* STORE_MANAGER ACTION BUTTONS (Dynamic) */}
         <div className="flex flex-wrap gap-3">
           {availableActions.length === 0 && (
             <span className="text-sm text-gray-500 italic">

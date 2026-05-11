@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const data = await res.json();
-        if (res.ok && data.user?.role === "ADMIN") {
+        if (res.ok && data.user?.role === "STORE_MANAGER") {
           return { ...data.user, accessToken: data.access_token };
         }
         return null;
@@ -87,9 +87,9 @@ export const authOptions: NextAuthOptions = {
           }
 
           const data = await res.json();
-          if (data.isAdmin && data.accessToken) {
+          if (data.isStoreManager && data.accessToken) {
             user.accessToken = data.accessToken;
-            user.role = "ADMIN";
+            user.role = "STORE_MANAGER";
             return true;
           }
           return false; 
