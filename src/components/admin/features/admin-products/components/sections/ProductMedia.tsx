@@ -1,6 +1,6 @@
-// src\components\admin\features\admin-products\components\sections\ProductMedia.tsx
+// src/components/admin/features/admin-products/components/sections/ProductMedia.tsx
 
-
+import React, { useEffect, useRef } from "react";
 import { useFormContext, useController } from "react-hook-form";
 import { CldUploadWidget } from "next-cloudinary";
 import { Upload, X } from "lucide-react";
@@ -14,6 +14,14 @@ export function ProductMedia() {
     name: "images",
     control,
   });
+
+  // 🔥 1. Add a synchronous tracker for rapid-fire multi-uploads
+  const latestImagesTracker = useRef<string[]>(images || []);
+
+  // 🔥 2. Keep it in sync if images change (e.g. from initialData or deletions)
+  useEffect(() => {
+    latestImagesTracker.current = images || [];
+  }, [images]);
 
   return (
     <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
@@ -40,7 +48,11 @@ export function ProductMedia() {
           options={{ multiple: true }}
           onSuccess={(result: any) => {
             if (result.event === "success") {
-              onChange([...images, result.info.secure_url]);
+              // 🔥 3. Push the new image into our synchronous tracker instantly
+              latestImagesTracker.current = [...latestImagesTracker.current, result.info.secure_url];
+              
+              // 🔥 4. Tell React Hook Form to update with the new full array
+              onChange(latestImagesTracker.current);
             }
           }}
         >

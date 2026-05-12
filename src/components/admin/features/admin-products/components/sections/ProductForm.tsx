@@ -1,11 +1,10 @@
-// src\components\admin\features\admin-products\components\sections\ProductForm.tsx
+// src/components/admin/features/admin-products/components/sections/ProductForm.tsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { FormProvider, useController } from "react-hook-form";
 import { ArrowLeft, Save, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CldUploadWidget } from "next-cloudinary";
-
 
 import APlusContentBuilder from "@/components/admin/APlusContentBuilder";
 import ProductHighlightsSelector from "@/components/admin/products/ProductHighlightsSelector";
@@ -25,6 +24,14 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
   const { form, mutation, isEditing } = useProductForm(initialData);
 
   const { field: { value: images, onChange: setImages } } = useController({ name: "images", control: form.control });
+
+  // 🔥 1. Add synchronous tracker for rapid-fire multi-uploads
+  const latestImagesTracker = useRef<string[]>(images || []);
+
+  // 🔥 2. Keep it in sync if images change (e.g. from initialData or deletions)
+  useEffect(() => {
+    latestImagesTracker.current = images || [];
+  }, [images]);
 
   useEffect(() => {
     if (initialData?.images) setImages(initialData.images);
@@ -82,7 +89,20 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                       <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"><X size={14} /></button>
                     </div>
                   ))}
-                  <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} options={{ multiple: true }} onSuccess={(result: any) => { if (result.event === "success") setImages([...images, result.info.secure_url]); }}>
+                  
+                  <CldUploadWidget 
+                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} 
+                    options={{ multiple: true }} 
+                    onSuccess={(result: any) => { 
+                      if (result.event === "success") { 
+                        // 🔥 3. Push the new image into our synchronous tracker instantly
+                        latestImagesTracker.current = [...latestImagesTracker.current, result.info.secure_url];
+                        
+                        // 🔥 4. Update the form state with the latest tracked array
+                        setImages([...latestImagesTracker.current]); 
+                      } 
+                    }}
+                  >
                     {({ open }) => (
                       <button type="button" onClick={() => open()} className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent">
                         <Upload size={28} />

@@ -69,8 +69,16 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
     mutationFn: async (data: ProductFormValues) => {
       if (data.images.length === 0) throw new Error("At least one image is required");
 
+
+      // 🔥 Auto-generate the slug from the product name
+      const generatedSlug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-") // Replace special chars and spaces with hyphens
+        .replace(/(^-|-$)+/g, "");   // Remove leading/trailing hyphens
+
       const payload = {
         ...data,
+        slug: generatedSlug, // <--- Add the slug here
         price: 0, // Legacy fallback
         oldPrice: null, // Legacy fallback
         careInstructions: data.careInstructions.map(i => i.value).filter(Boolean),
