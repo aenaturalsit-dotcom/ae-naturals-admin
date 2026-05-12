@@ -2,17 +2,10 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { cookies } from "next/headers"; // 1. Import cookies
+import { cookies } from "next/headers";
 
-
-
-
-
-// 1. Grab the days from the env variable (default to 7)
 const MAX_AGE_DAYS = parseInt(process.env.REFRESH_TOKEN_MAX_AGE_DAYS || "7", 10);
-// 2. Convert those days into seconds
 const COOKIE_MAX_AGE_SECONDS = MAX_AGE_DAYS * 24 * 60 * 60;
-
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -34,13 +27,9 @@ export const authOptions: NextAuthOptions = {
           headers: { "Content-Type": "application/json" },
         });
         
-        // 2. Extract and forward the Set-Cookie header to the browser
         const setCookieHeader = res.headers.get("set-cookie");
-        
         if (setCookieHeader) {
-          // Adjust the regex if your backend names the cookie differently
           const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
-          
           if (refreshTokenMatch) {
             const cookieStore = await cookies();
             cookieStore.set({
@@ -49,7 +38,7 @@ export const authOptions: NextAuthOptions = {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               path: "/",
-              maxAge: COOKIE_MAX_AGE_SECONDS, // Match this with your backend's refresh token lifespan
+              maxAge: COOKIE_MAX_AGE_SECONDS, 
             });
           }
         }
@@ -68,8 +57,6 @@ export const authOptions: NextAuthOptions = {
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-admin?email=${user.email}`);
           
-          // 🔥 Apply the identical Cookie forwarding logic here if your 
-          // backend also issues a refresh_token during Google Auth!
           const setCookieHeader = res.headers.get("set-cookie");
           if (setCookieHeader) {
              const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);

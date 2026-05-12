@@ -1,89 +1,81 @@
+// src/lib/api-client.ts
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
-import { getSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useAuthStore } from "../store/authStore";
 
-// 1. Extend the Axios config to include our custom retry flag
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-// 2. State variables for handling concurrent refresh requests
+// 🐛 DEBUG LOGGER
+const debugLog = (msg: string) => {
+  const time = new Date().toISOString().split('T')[1].slice(0, -1); // e.g. 14:32:01.123
+  console.log(`[${time}] 🔐 AUTH_INTERCEPTOR: ${msg}`);
+};
+
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
   reject: (reason?: any) => void;
 }> = [];
 
-// Helper to process all paused requests once a new token is fetched
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
+  debugLog(`Processing queued requests. Queue size: ${failedQueue.length}`);
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
   failedQueue = [];
 };
 
-// 3. Create the Axios Instance
 const apiClient = axios.create({
   baseURL: new URL(process.env.NEXT_PUBLIC_API_URL!).toString(),
   timeout: 15000,
-  withCredentials: true, // CRITICAL: This allows browser-to-server cookie transfer
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-// 4. Request Interceptor
 apiClient.interceptors.request.use(
-  async (config: CustomAxiosRequestConfig) => {
-    const session: any = await getSession();
-    
-    // Always prioritize the session token for the Authorization header
-    if (session?.accessToken && config.headers) {
-      config.headers.Authorization = `Bearer ${session.accessToken}`;
+  (config: CustomAxiosRequestConfig) => {
+    const token = useAuthStore.getState().token;
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// 5. Response Interceptor
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    // Return data directly to keep component code clean (e.g., `const data = await apiClient.get(...)`)
-    return response.data;
-  },
+  (response: AxiosResponse) => response.data,
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig;
+    const url = originalRequest.url;
 
-    // Check if error is 401 and we haven't already retried this exact request
+    // Detect 401 Unauthorized
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      debugLog(`Caught 401 Unauthorized for -> ${url}`);
       
       if (isRefreshing) {
-        // If a refresh is already happening, pause this request and add it to the queue
-        return new Promise(function (resolve, reject) {
+        debugLog(`Refresh already in progress. Queuing request for -> ${url}`);
+        return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            // Once resolved, attach the new token and retry the original request
+            debugLog(`Replaying queued request with new token -> ${url}`);
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return apiClient(originalRequest);
           })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .catch((err) => Promise.reject(err));
       }
 
-      // Mark this request as retried so we don't loop infinitely
       originalRequest._retry = true;
       isRefreshing = true;
+      debugLog(`Starting Token Refresh API Call...`);
 
       try {
-        // Body-less POST to refresh. Browser attaches cookie automatically
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
           {},
@@ -91,36 +83,34 @@ apiClient.interceptors.response.use(
         );
         
         const newToken = res.data.access_token;
+        debugLog(`✅ Refresh SUCCESS! New Token: ...${newToken.slice(-10)}`);
 
-        // Set the new token on the current failed request
+        useAuthStore.getState().updateToken(newToken);
+
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
         }
         
-        // Release the queue for any other requests that were paused
         processQueue(null, newToken);
-        
-        // Retry the original request
+        debugLog(`Replaying original request -> ${url}`);
         return await apiClient(originalRequest);
         
       } catch (refreshError: any) {
-        // If refresh fails, the 30-day session is actually dead
+        debugLog(`❌ Refresh FAILED: ${refreshError.message}. Logging out.`);
         processQueue(refreshError, null);
         
-        // Clear auth state and redirect to login
+        useAuthStore.getState().logout();
         await signOut({ callbackUrl: '/admin/login' });
         
         return Promise.reject(refreshError);
       } finally {
-        // Reset the refreshing flag regardless of success or failure
         isRefreshing = false;
+        debugLog(`Released Mutex Lock.`);
       }
     }
 
-    // For all other errors (400, 403, 500, etc.), just return the error
     return Promise.reject(error);
   }
 );
 
-// THIS IS THE LINE TURBOPACK WAS COMPLAINING ABOUT MISSING
 export default apiClient;
