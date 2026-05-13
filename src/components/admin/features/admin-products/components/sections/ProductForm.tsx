@@ -1,7 +1,7 @@
 // src/components/admin/features/admin-products/components/sections/ProductForm.tsx
 
 import React, { useEffect, useRef } from "react";
-import { FormProvider, useController } from "react-hook-form";
+import { FormProvider, useController, Controller } from "react-hook-form"; // Added Controller
 import { ArrowLeft, Save, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CldUploadWidget } from "next-cloudinary";
@@ -19,20 +19,24 @@ interface ProductFormProps {
   stores: any[];
 }
 
-export function ProductForm({ initialData, categories, stores }: ProductFormProps) {
+export  function ProductForm({ initialData, categories, stores }: ProductFormProps) {
   const router = useRouter();
   const { form, mutation, isEditing } = useProductForm(initialData);
 
-  const { field: { value: images, onChange: setImages } } = useController({ name: "images", control: form.control });
+  const { field: { value: images, onChange: setImages } } = useController({ 
+    name: "images", 
+    control: form.control 
+  });
 
-  // 🔥 1. Add synchronous tracker for rapid-fire multi-uploads
+  // Synchronous tracker for multi-uploads
   const latestImagesTracker = useRef<string[]>(images || []);
 
-  // 🔥 2. Keep it in sync if images change (e.g. from initialData or deletions)
   useEffect(() => {
     latestImagesTracker.current = images || [];
   }, [images]);
 
+  // Note: Manual setImages for hydration is no longer needed if using form.reset() 
+  // in useProductForm, but kept as a safeguard for current implementation.
   useEffect(() => {
     if (initialData?.images) setImages(initialData.images);
   }, [initialData, setImages]);
@@ -40,12 +44,19 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
   return (
     <div className="min-h-screen bg-white pb-24">
       <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit((data: ProductFormValues) => mutation.mutate(data))} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10">
+        <form 
+          onSubmit={form.handleSubmit((data: ProductFormValues) => mutation.mutate(data))} 
+          className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10"
+        >
           
           {/* HEADER (Sticky) */}
           <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md py-4 border-b border-zinc-100 flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => router.back()} className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors">
+              <button 
+                type="button" 
+                onClick={() => router.back()} 
+                className="p-3 bg-zinc-50 hover:bg-zinc-100 rounded-full transition-colors"
+              >
                 <ArrowLeft size={20} className="text-zinc-600" />
               </button>
               <div>
@@ -57,27 +68,43 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                 </p>
               </div>
             </div>
-            <button type="submit" disabled={mutation.isPending || images.length === 0} className="bg-indigo-600 text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:bg-zinc-300 disabled:shadow-none">
+            <button 
+              type="submit" 
+              disabled={mutation.isPending || images.length === 0} 
+              className="bg-indigo-600 text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:bg-zinc-300 disabled:shadow-none"
+            >
               {mutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-              {mutation.isPending ? (isEditing ? "SAVING..." : "PUBLISHING...") : (isEditing ? "SAVE CHANGES" : "PUBLISH TO CATALOG")}
+              {mutation.isPending 
+                ? (isEditing ? "SAVING..." : "PUBLISHING...") 
+                : (isEditing ? "SAVE CHANGES" : "PUBLISH TO CATALOG")
+              }
             </button>
           </div>
 
           {/* MAIN FORM GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* LEFT COLUMN */}
             <div className="lg:col-span-2 space-y-8">
+              
+              {/* Product Info */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-6">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Title *</label>
-                  <input {...form.register("name")} className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" />
+                  <input 
+                    {...form.register("name")} 
+                    className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" 
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Description</label>
-                  <textarea {...form.register("description")} rows={5} className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white" />
+                  <textarea 
+                    {...form.register("description")} 
+                    rows={5} 
+                    className="w-full p-5 border rounded-3xl outline-none focus:ring-2 focus:ring-[#006044] font-medium leading-relaxed bg-white" 
+                  />
                 </div>
               </div>
 
+              {/* Media Gallery */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Image Gallery (Min 1) *</label>
@@ -86,7 +113,13 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                   {images.map((url: string, i: number) => (
                     <div key={i} className="relative h-32 w-32 rounded-3xl overflow-hidden border shadow-sm group">
                       <img src={url} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt={`upload-${i}`} />
-                      <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"><X size={14} /></button>
+                      <button 
+                        type="button" 
+                        onClick={() => setImages(images.filter((_, idx) => idx !== i))} 
+                        className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))}
                   
@@ -95,16 +128,17 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                     options={{ multiple: true }} 
                     onSuccess={(result: any) => { 
                       if (result.event === "success") { 
-                        // 🔥 3. Push the new image into our synchronous tracker instantly
                         latestImagesTracker.current = [...latestImagesTracker.current, result.info.secure_url];
-                        
-                        // 🔥 4. Update the form state with the latest tracked array
                         setImages([...latestImagesTracker.current]); 
                       } 
                     }}
                   >
                     {({ open }) => (
-                      <button type="button" onClick={() => open()} className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent">
+                      <button 
+                        type="button" 
+                        onClick={() => open()} 
+                        className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent"
+                      >
                         <Upload size={28} />
                         <span className="text-[10px] font-black mt-2 tracking-widest uppercase">Add Photos</span>
                       </button>
@@ -113,12 +147,25 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                 </div>
               </div>
 
+              {/* ✅ SERVICE HIGHLIGHTS (Fixed with Controller) */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">
                 <label className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                   <Sparkles size={18} className="text-[#006044]" /> Service Highlights
                 </label>
                 <div className="bg-white p-4 rounded-2xl border border-zinc-100">
-                  <ProductHighlightsSelector selectedIds={form.watch("highlightIds") || []} onChange={(ids: string[]) => form.setValue("highlightIds", ids, { shouldDirty: true })} />
+                  <Controller
+                    name="highlightIds"
+                    control={form.control}
+                    render={({ field: { value, onChange } }) => (
+                      <ProductHighlightsSelector
+                        selectedIds={value || []}
+                        onChange={(ids) => {
+                          console.log("[Controller] Updating highlightIds to:", ids);
+                          onChange(ids); // Forces immediate parent re-render and propagation to child
+                        }}
+                      />
+                    )}
+                  />
                 </div>
               </div>
 
@@ -130,14 +177,20 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
               <div className="bg-zinc-50 p-6 rounded-[32px] border border-zinc-100 space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Store *</label>
-                  <select {...form.register("storeId")} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                  <select 
+                    {...form.register("storeId")} 
+                    className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm"
+                  >
                     <option value="">Choose Store</option>
                     {stores.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Select Category *</label>
-                  <select {...form.register("categoryId")} className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm">
+                  <select 
+                    {...form.register("categoryId")} 
+                    className="w-full p-3 border rounded-2xl bg-white outline-none focus:ring-2 focus:ring-[#006044] font-bold text-sm"
+                  >
                     <option value="">Choose Category</option>
                     {categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                   </select>
@@ -162,7 +215,6 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                 </label>
               </div>
 
-              {/* MODULAR INJECTIONS */}
               <ProductVariants />
               <ProductExtraDetails />
               

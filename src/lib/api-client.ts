@@ -20,7 +20,7 @@ let failedQueue: Array<{
 }> = [];
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
-  debugLog(`Processing queued requests. Queue size: ${failedQueue.length}`);
+  // debugLog(`Processing queued requests. Queue size: ${failedQueue.length}`);
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
     else prom.resolve(token);
@@ -54,15 +54,15 @@ apiClient.interceptors.response.use(
 
     // Detect 401 Unauthorized
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-      debugLog(`Caught 401 Unauthorized for -> ${url}`);
+      // debugLog(`Caught 401 Unauthorized for -> ${url}`);
       
       if (isRefreshing) {
-        debugLog(`Refresh already in progress. Queuing request for -> ${url}`);
+        // debugLog(`Refresh already in progress. Queuing request for -> ${url}`);
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            debugLog(`Replaying queued request with new token -> ${url}`);
+            // debugLog(`Replaying queued request with new token -> ${url}`);
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
@@ -73,7 +73,7 @@ apiClient.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
-      debugLog(`Starting Token Refresh API Call...`);
+      // debugLog(`Starting Token Refresh API Call...`);
 
       try {
         const res = await axios.post(
@@ -83,7 +83,7 @@ apiClient.interceptors.response.use(
         );
         
         const newToken = res.data.access_token;
-        debugLog(`✅ Refresh SUCCESS! New Token: ...${newToken.slice(-10)}`);
+        // debugLog(`✅ Refresh SUCCESS! New Token: ...${newToken.slice(-10)}`);
 
         useAuthStore.getState().updateToken(newToken);
 
@@ -92,7 +92,7 @@ apiClient.interceptors.response.use(
         }
         
         processQueue(null, newToken);
-        debugLog(`Replaying original request -> ${url}`);
+        // debugLog(`Replaying original request -> ${url}`);
         return await apiClient(originalRequest);
         
       } catch (refreshError: any) {
@@ -105,7 +105,7 @@ apiClient.interceptors.response.use(
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
-        debugLog(`Released Mutex Lock.`);
+        // debugLog(`Released Mutex Lock.`);
       }
     }
 

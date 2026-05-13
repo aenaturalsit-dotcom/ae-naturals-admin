@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, X, Filter, ChevronDown } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { cn } from "@/lib/utils"; // Import your utility
 
 interface FilterOption {
   label: string;
@@ -32,7 +33,6 @@ export function DataFilterBar({
   );
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // Sync debounced search value to URL without infinite loops
   useEffect(() => {
     const currentSearchInUrl = searchParams.get("search") || "";
 
@@ -48,7 +48,6 @@ export function DataFilterBar({
     }
   }, [debouncedSearch, pathname, router, searchParams]);
 
-  // Handle Status Dropdown
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const params = new URLSearchParams(searchParams.toString());
     if (e.target.value) {
@@ -64,12 +63,10 @@ export function DataFilterBar({
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      {/* Left: Search + Status */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
 
         {/* Search Input */}
         <div className="relative w-full sm:w-80">
-          {/* Left icon — vertically centered, non-interactive */}
           <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <Search className="w-4 h-4 text-gray-400 shrink-0" />
           </span>
@@ -79,24 +76,14 @@ export function DataFilterBar({
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            // pl-9  = 36px left padding (icon 16px + left-3 12px + 8px gap)
-            // pr-9  = 36px right padding (clear button 16px + right-3 12px)
-            className="
-              w-full
-              h-10
-              pl-9 pr-9
-              bg-white
-              border border-gray-200
-              rounded-xl
-              text-sm text-gray-800 placeholder:text-gray-400
-              shadow-sm
-              focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E]
-              outline-none
-              transition-all
-            "
+            // Use cn() or a single line string to avoid whitespace mismatches
+            className={cn(
+              "w-full h-10 pl-9 pr-9 bg-white border border-gray-200 rounded-xl",
+              "text-sm text-gray-800 placeholder:text-gray-400 shadow-sm",
+              "focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none transition-all"
+            )}
           />
 
-          {/* Clear button — only visible when there is text */}
           {searchTerm && (
             <button
               type="button"
@@ -112,7 +99,6 @@ export function DataFilterBar({
         {/* Status Dropdown */}
         {statusOptions.length > 0 && (
           <div className="relative shrink-0">
-            {/* Left filter icon */}
             <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <Filter className="w-4 h-4 text-gray-400 shrink-0" />
             </span>
@@ -120,22 +106,12 @@ export function DataFilterBar({
             <select
               value={currentStatus}
               onChange={handleStatusChange}
-              // pl-9  = room for Filter icon
-              // pr-8  = room for ChevronDown icon
-              className="
-                appearance-none
-                h-10
-                pl-9 pr-8
-                bg-white
-                border border-gray-200
-                rounded-xl
-                text-sm font-medium text-gray-700
-                shadow-sm
-                focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E]
-                outline-none
-                cursor-pointer
-                transition-all
-              "
+              // Formatted as a clean string to prevent hydration errors
+              className={cn(
+                "appearance-none h-10 pl-9 pr-8 bg-white border border-gray-200 rounded-xl",
+                "text-sm font-medium text-gray-700 shadow-sm",
+                "focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none cursor-pointer transition-all"
+              )}
             >
               <option value="">All Statuses</option>
               {statusOptions.map((opt) => (
@@ -145,7 +121,6 @@ export function DataFilterBar({
               ))}
             </select>
 
-            {/* Custom chevron replaces the native arrow for pixel-perfect alignment */}
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
               <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
             </span>
@@ -158,17 +133,7 @@ export function DataFilterBar({
         <button
           type="button"
           onClick={onExport}
-          className="
-            w-full sm:w-auto
-            h-10
-            px-5
-            bg-gray-900 text-white
-            text-sm font-bold
-            rounded-xl
-            shadow-sm
-            hover:bg-gray-800
-            transition-colors
-          "
+          className="w-full sm:w-auto h-10 px-5 bg-gray-900 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-gray-800 transition-colors"
         >
           Export CSV
         </button>

@@ -1,5 +1,6 @@
-// src\components\admin\features\admin-products\hooks\useProductForm.ts
+// src/components/admin/features/admin-products/hooks/useProductForm.ts
 
+import { useEffect } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, UseMutationResult } from "@tanstack/react-query";
@@ -18,69 +19,107 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
   const queryClient = useQueryClient();
   const isEditing = !!initialData;
 
-  const defaultValues: ProductFormValues = initialData ? {
-    name: initialData.name || "",
-    description: initialData.description || "",
-    categoryId: initialData.categoryId || "",
-    storeId: initialData.storeId || "",
-    ingredients: initialData.extra?.ingredients || initialData.ingredients || "",
-    isActive: initialData.isActive ?? true,
-    isFeatured: initialData.isFeatured ?? false,
-    isCodEnabled: initialData.isCodEnabled ?? true,
-    images: initialData.images || [],
-    highlightIds: initialData.highlights?.map((h: any) => h.id) || initialData.highlightIds || [],
+  /**
+   * Helper function to map raw API data to the React Hook Form structure.
+   * Defined outside useMemo/Effect so it can be used for both initial state and reset.
+   */
+  const mapDataToForm = (data: any): ProductFormValues => ({
+    name: data.name || "",
+    description: data.description || "",
+    categoryId: data.categoryId || "",
+    storeId: data.storeId || "",
+    ingredients: data.extra?.ingredients || data.ingredients || "",
+    isActive: data.isActive ?? true,
+    isFeatured: data.isFeatured ?? false,
+    isCodEnabled: data.isCodEnabled ?? true,
+    images: data.images || [],
     
-    careInstructions: initialData.careInstructions?.length ? initialData.careInstructions.map((v: string) => ({ value: v })) : [{ value: "" }],
-    deliveryInfo: initialData.deliveryInfo?.length ? initialData.deliveryInfo.map((v: string) => ({ value: v })) : [{ value: "" }],
-    attributes: initialData.attributes?.length ? initialData.attributes : [{ name: "", value: "" }],
+    // 🔥 HYDRATION FIX: Safely parse highlight IDs from pivot objects or flat arrays
+    highlightIds: Array.isArray(data.highlightIds) 
+      ? data.highlightIds 
+      : Array.isArray(data.highlights) 
+        ? data.highlights.map((h: any) => typeof h === 'string' ? h : (h.featureId || h.id)) 
+        : [],
     
-    variants: initialData.variants?.length ? initialData.variants.map((v: any) => ({
+    careInstructions: data.careInstructions?.length 
+      ? data.careInstructions.map((v: string) => ({ value: v })) 
+      : [{ value: "" }],
+    deliveryInfo: data.deliveryInfo?.length 
+      ? data.deliveryInfo.map((v: string) => ({ value: v })) 
+      : [{ value: "" }],
+    attributes: data.attributes?.length 
+      ? data.attributes 
+      : [{ name: "", value: "" }],
+    
+    variants: data.variants?.length ? data.variants.map((v: any) => ({
       ...v,
-      price: Number(v.price) || Number(initialData.price + (v.priceModifier || 0)) || 0,
-      oldPrice: Number(v.oldPrice) || Number(initialData.oldPrice) || 0,
+      price: Number(v.price) || Number(data.price + (v.priceModifier || 0)) || 0,
+      oldPrice: Number(v.oldPrice) || Number(data.oldPrice) || 0,
       stock: Number(v.stock) || 0,
       shippingWeightKg: Number(v.shippingWeightKg) || 0,
       lengthCm: Number(v.lengthCm) || 0,
       widthCm: Number(v.widthCm) || 0,
       heightCm: Number(v.heightCm) || 0,
-    })) : [{ name: "", sku: "", optionType: "Size", optionValue: "", price: Number(initialData.price) || 0, oldPrice: Number(initialData.oldPrice) || 0, stock: 10, shippingWeightKg: 0, lengthCm: 0, widthCm: 0, heightCm: 0 }],
+    })) : [{ 
+      name: "", 
+      sku: "", 
+      optionType: "Size", 
+      optionValue: "", 
+      price: Number(data.price) || 0, 
+      oldPrice: Number(data.oldPrice) || 0, 
+      stock: 10, 
+      shippingWeightKg: 0, 
+      lengthCm: 0, 
+      widthCm: 0, 
+      heightCm: 0 
+    }],
     
     extra: {
-      manufacturer: initialData.extra?.manufacturer || "",
-      countryOfOrigin: initialData.extra?.countryOfOrigin || "",
-      safetyInfo: initialData.extra?.safetyInfo || "",
-      directions: initialData.extra?.directions || "",
-      legalDisclaimer: initialData.extra?.legalDisclaimer || "",
-      aPlusContent: initialData.extra?.aPlusContent || [],
+      manufacturer: data.extra?.manufacturer || "",
+      countryOfOrigin: data.extra?.countryOfOrigin || "",
+      safetyInfo: data.extra?.safetyInfo || "",
+      directions: data.extra?.directions || "",
+      legalDisclaimer: data.extra?.legalDisclaimer || "",
+      aPlusContent: data.extra?.aPlusContent || [],
     }
-  } : {
-    name: "", description: "", categoryId: "", storeId: "", isActive: true, isFeatured: false, isCodEnabled: true, images: [], highlightIds: [], ingredients: "",
+  });
+
+  const emptyDefaults: ProductFormValues = {
+    name: "", description: "", categoryId: "", storeId: "", isActive: true, 
+    isFeatured: false, isCodEnabled: true, images: [], highlightIds: [], ingredients: "",
     variants: [{ name: "", sku: "", optionType: "Size", optionValue: "", price: 0, oldPrice: 0, stock: 10, shippingWeightKg: 0, lengthCm: 0, widthCm: 0, heightCm: 0 }],
     attributes: [{ name: "", value: "" }], careInstructions: [{ value: "" }], deliveryInfo: [{ value: "" }],
     extra: { manufacturer: "", countryOfOrigin: "", safetyInfo: "", directions: "", legalDisclaimer: "", aPlusContent: [] }
   };
 
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema) as any, // bypasses z.coerce "unknown" input type clash
-    defaultValues,
+    resolver: zodResolver(productFormSchema) as any,
+    defaultValues: initialData ? mapDataToForm(initialData) : emptyDefaults,
   });
+
+  // 🔥 THE CRITICAL SYNC EFFECT
+  // This watches initialData (from TanStack Query). When the product finally loads,
+  // we call form.reset() to override the initial "empty" state with the real data.
+  useEffect(() => {
+    if (initialData) {
+      form.reset(mapDataToForm(initialData));
+    }
+  }, [initialData, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
       if (data.images.length === 0) throw new Error("At least one image is required");
 
-
-      // 🔥 Auto-generate the slug from the product name
       const generatedSlug = data.name
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-") // Replace special chars and spaces with hyphens
-        .replace(/(^-|-$)+/g, "");   // Remove leading/trailing hyphens
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
 
       const payload = {
         ...data,
-        slug: generatedSlug, // <--- Add the slug here
-        price: 0, // Legacy fallback
-        oldPrice: null, // Legacy fallback
+        slug: generatedSlug,
+        price: 0, 
+        oldPrice: null, 
         careInstructions: data.careInstructions.map(i => i.value).filter(Boolean),
         deliveryInfo: data.deliveryInfo.map(i => i.value).filter(Boolean),
         attributes: data.attributes.filter(a => a.name && a.value),
