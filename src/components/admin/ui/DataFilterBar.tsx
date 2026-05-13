@@ -1,10 +1,10 @@
-// src\components\admin\ui\DataFilterBar.tsx
+// src/components/admin/ui/DataFilterBar.tsx
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, X, Filter } from "lucide-react";
+import { Search, X, Filter, ChevronDown } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface FilterOption {
@@ -27,19 +27,20 @@ export function DataFilterBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
   const debouncedSearch = useDebounce(searchTerm, 500);
 
-  // Sync Search to URL safely without infinite loops
+  // Sync debounced search value to URL without infinite loops
   useEffect(() => {
     const currentSearchInUrl = searchParams.get("search") || "";
 
-    // ONLY push a router update if the debounced value differs from the URL
     if (debouncedSearch !== currentSearchInUrl) {
       const params = new URLSearchParams(searchParams.toString());
       if (debouncedSearch) {
         params.set("search", debouncedSearch);
-        params.set("page", "1"); // Reset page on new search
+        params.set("page", "1");
       } else {
         params.delete("search");
       }
@@ -62,33 +63,79 @@ export function DataFilterBar({
   const currentStatus = searchParams.get("status") || "";
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-      <div className="flex items-center gap-3 w-full sm:w-auto">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      {/* Left: Search + Status */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+
+        {/* Search Input */}
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          {/* Left icon — vertically centered, non-interactive */}
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+          </span>
+
           <input
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none transition-all shadow-sm"
+            // pl-9  = 36px left padding (icon 16px + left-3 12px + 8px gap)
+            // pr-9  = 36px right padding (clear button 16px + right-3 12px)
+            className="
+              w-full
+              h-10
+              pl-9 pr-9
+              bg-white
+              border border-gray-200
+              rounded-xl
+              text-sm text-gray-800 placeholder:text-gray-400
+              shadow-sm
+              focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E]
+              outline-none
+              transition-all
+            "
           />
+
+          {/* Clear button — only visible when there is text */}
           {searchTerm && (
             <button
+              type="button"
               onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 shrink-0" />
             </button>
           )}
         </div>
 
+        {/* Status Dropdown */}
         {statusOptions.length > 0 && (
           <div className="relative shrink-0">
+            {/* Left filter icon */}
+            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+            </span>
+
             <select
               value={currentStatus}
               onChange={handleStatusChange}
-              className="appearance-none pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none cursor-pointer shadow-sm"
+              // pl-9  = room for Filter icon
+              // pr-8  = room for ChevronDown icon
+              className="
+                appearance-none
+                h-10
+                pl-9 pr-8
+                bg-white
+                border border-gray-200
+                rounded-xl
+                text-sm font-medium text-gray-700
+                shadow-sm
+                focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E]
+                outline-none
+                cursor-pointer
+                transition-all
+              "
             >
               <option value="">All Statuses</option>
               {statusOptions.map((opt) => (
@@ -97,15 +144,31 @@ export function DataFilterBar({
                 </option>
               ))}
             </select>
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+
+            {/* Custom chevron replaces the native arrow for pixel-perfect alignment */}
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
+              <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+            </span>
           </div>
         )}
       </div>
 
+      {/* Right: Export */}
       {onExport && (
         <button
+          type="button"
           onClick={onExport}
-          className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-gray-800 transition-colors"
+          className="
+            w-full sm:w-auto
+            h-10
+            px-5
+            bg-gray-900 text-white
+            text-sm font-bold
+            rounded-xl
+            shadow-sm
+            hover:bg-gray-800
+            transition-colors
+          "
         >
           Export CSV
         </button>
