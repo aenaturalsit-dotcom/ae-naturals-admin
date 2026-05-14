@@ -63,7 +63,7 @@ export function ProductVariants() {
             <div className="bg-zinc-50 p-3 rounded-xl grid grid-cols-4 gap-2 border border-zinc-100">
               <div className="text-center">
                 <label className="text-[8px] font-black text-zinc-400 uppercase">WT(kg)</label>
-                <input {...register(`variants.${index}.shippingWeightKg`)} type="number" step="0.01" placeholder="0" className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" />
+                <input {...register(`variants.${index}.shippingWeightKg`)} type="number" step="0.001" placeholder="0" className="w-full bg-white border border-zinc-200 rounded p-1.5 mt-1 text-center text-xs font-bold outline-none focus:border-[#006044]" />
               </div>
               <div className="text-center">
                 <label className="text-[8px] font-black text-zinc-400 uppercase">L(cm)</label>
