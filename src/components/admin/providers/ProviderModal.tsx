@@ -276,36 +276,41 @@ CASHFREE: [
 
   SHIPPING: {
     SHIPROCKET: [
-      {
-        key: 'email',
-        placeholder: 'support@yourdomain.com',
-      },
-      {
-        key: 'password',
-        placeholder: 'Shiprocket password',
-      },
-   {
-  key: 'token',
-  placeholder: 'Auth token',
-  note: 'Generate this token using Shiprocket API login (POST /v1/external/auth/login) with your API user email and password. Token is required in Authorization: Bearer <token>.',
-},
-      {
-        key: 'pickup_location',
-        placeholder: 'Warehouse Mumbai',
-      },
-      {
-        key: 'channel_id',
-        placeholder: '123456',
-      },
-      {
-        key: 'show_estimation',
-        note: 'Show delivery estimate on checkout',
-      },
-      {
-        key: 'preferred_courier_name',
-        placeholder: 'Delhivery',
-      },
-    ],
+  {
+    key: 'email',
+    placeholder: 'support@yourdomain.com',
+    note: 'Enter your Shiprocket registered email address used for API authentication and panel login.',
+  },
+  {
+    key: 'password',
+    placeholder: 'Shiprocket password',
+    note: 'Enter your Shiprocket account password. Used only for secure API token generation.',
+  },
+  {
+    key: 'token',
+    placeholder: 'Auth token',
+    note: 'Generate this token using Shiprocket API Login (POST /v1/external/auth/login) with your Shiprocket email and password. This token is required for Authorization: Bearer <token> requests.',
+  },
+  {
+    key: 'pickup_location',
+    placeholder: 'Warehouse Mumbai',
+    note: 'Enter the exact pickup location nickname configured inside your Shiprocket dashboard under Pickup Addresses.',
+  },
+  {
+    key: 'channel_id',
+    placeholder: '123456',
+    note: 'Enter your Shiprocket Sales Channel ID or Store ID used for order syncing and marketplace/store integration.',
+  },
+  {
+    key: 'show_estimation',
+    note: 'Enable this option to display estimated delivery dates and courier availability during checkout.',
+  },
+  {
+    key: 'preferred_courier_name',
+    placeholder: 'Delhivery',
+    note: 'Optional default courier partner to prioritize when customers do not manually choose a shipping provider.',
+  },
+],
 
     DELHIVERY: [
       {

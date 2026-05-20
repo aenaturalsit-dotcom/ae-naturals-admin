@@ -9,10 +9,12 @@ import { AdminOrdersService } from "@/services/admin-orders.service";
 import { Search, Filter, ArrowUpDown } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
+// 🟢 REPLACE WITH THIS:
 const TABS = [
   { id: "ALL", label: "All" },
   { id: "UNFULFILLED", label: "Unfulfilled" },
-  { id: "UNPAID", label: "Unpaid" },
+  { id: "UNPAID", label: "Prepaid Unpaid" },
+  { id: "COD_UNPAID", label: "COD (Pending Cash)" }, // 👈 Added for COD financial management
   { id: "OPEN", label: "Open" },
   { id: "CLOSED", label: "Closed" },
 ];
@@ -61,11 +63,12 @@ export default function AdminOrdersPage() {
   };
 
   // Fetch Data
+  // 1. UPDATE THE QUERY FUNCTION:
   const { data: responseData, isLoading } = useQuery({
     queryKey: ["admin-orders", { page, search, tab }],
     queryFn: async () => {
       const response = await AdminOrdersService.getOrders({ page, limit: 15, search, tab });
-      return response.data;
+      return response; // 🟢 FIX: Return the raw response directly, do not do .data here!
     },
   });
 
