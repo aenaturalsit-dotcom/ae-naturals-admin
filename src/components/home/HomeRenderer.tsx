@@ -1,20 +1,17 @@
 // src/components/home/HomeRenderer.tsx
 
-
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useStorefrontStore } from "@/store/useStorefrontStore";
+import React from "react";
 import { HeroBanner } from "./HeroBanner";
 import { ProductCarousel } from "./ProductCarousel";
 import { PromotionalBanner } from "./PromotionalBanner";
 import { TrustTicker } from "./TrustTicker";
 import { BrandStory } from "./BrandStory";
 import { FeaturedProducts } from "./FeaturedProducts";
-import {HomeBlogSection} from "./HomeBlogSection";
+import { HomeBlogSection } from "./HomeBlogSection";
 import { CollectionsShowcase } from "./CollectionsShowcase";
 import { VideoShoppableSection } from "./VideoShoppableSection";
-
 
 // 1. REGISTRY: Maps Admin block types to your actual React components
 const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
@@ -27,7 +24,6 @@ const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   BRAND_STORY: BrandStory,
   BLOG_SECTION: HomeBlogSection,
   VIDEO_SHOPPABLE: VideoShoppableSection,
-
 };
 
 interface HomeRendererProps {
@@ -41,28 +37,11 @@ export default function HomeRenderer({
   data,
   previewMode = false,
 }: HomeRendererProps) {
-  const [mounted, setMounted] = useState(false);
-  const liveSections = useStorefrontStore((state) => state.sections);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Determines the proper sequence based on Admin definition
-  const sectionsToRender = previewMode && mounted ? liveSections : config?.sectionsOrder;
-
-  if (!sectionsToRender) return null;
-
   return (
-    <div
-      className={`flex flex-col gap-y-12 md:gap-y-16 bg-white ${
-        previewMode ? "min-h-full pb-16" : "min-h-screen pb-24"
-      }`}
-    >
-      {/* Maps through the exact sequence defined in the DB/Admin */}
-      {sectionsToRender
-        .filter((section: any) => section.isActive)
-        .map((section: any) => {
+    <div className="w-full flex flex-col gap-0 bg-white">
+      {config?.sectionsOrder
+        ?.filter((section) => section.isActive !== false)
+        ?.map((section) => {
           const Component = SECTION_COMPONENTS[section.type];
           if (!Component) return null;
 
@@ -72,11 +51,12 @@ export default function HomeRenderer({
             <section
               key={section.id}
               id={section.id}
-              className="w-full px-4 md:px-0"
+              className="w-full"
             >
               <Component
                 data={resolvedData}
                 settings={section.settings || {}}
+                previewMode={previewMode}
               />
             </section>
           );
@@ -95,16 +75,31 @@ function resolveData(section: any, data: any) {
       return data?.featuredProducts || [];
 
     case 'PRODUCT_CAROUSEL':
-      if (sourceKey?.startsWith('collection_')) {
-        const slug = sourceKey.replace('collection_', '');
-        const target = data.collections?.find((c: any) => c.slug === slug);
-        return target?.products?.map((p: any) => p.product || p) || [];
-      }
-      return data[sourceKey] || [];
+  if (sourceKey?.startsWith('collection_')) {
+    const selector = sourceKey.replace('collection_', '');
+    
+    // Fallback search checking both slug AND stringified ID match configurations
+    const target = data?.collections?.find((c: any) => 
+      String(c.slug) === String(selector) || String(c.id) === String(selector)
+    );
+    
+    if (target) {
+      const rawProducts = target.products || [];
+      return rawProducts.map((p: any) => p.product || p);
+    }
+    return [];
+  }
+  return data?.[sourceKey] || [];
       
     case 'COLLECTIONS':
-      // CollectionsShowcase fetches its own data using settings.collectionId, 
-      // but we pass the fallback collections array just in case.
+      if (settings?.collectionId && data?.collections) {
+        const selectedCollection = data.collections.find(
+          (c: any) => String(c.id) === String(settings.collectionId)
+        );
+        if (selectedCollection) {
+          return [selectedCollection];
+        }
+      }
       return data?.collections || [];
 
     case 'BLOG_SECTION':
@@ -114,11 +109,16 @@ function resolveData(section: any, data: any) {
     case 'PROMO_BANNER':
       return data?.banners || [];
 
-       case "VIDEO_SHOPPABLE":
-      // The video data is stored directly in the admin block settings now!
-      return settings.slides || [];
+    case 'VIDEO_SHOPPABLE':
+      // Pass existing slide setups from settings down if data isn't separated on root data level
+      return settings?.slides || data?.videoReels || [];
+
+    case 'TRUST_BADGES':
+    case 'BRAND_STORY':
+      // These elements rely strictly on configured block settings context fields rather than datasets
+      return data || [];
 
     default:
-      return null;
+      return [];
   }
 }

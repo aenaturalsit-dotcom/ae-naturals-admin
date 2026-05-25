@@ -201,13 +201,18 @@ export default function StorefrontBuilderPage() {
             </div>
 
             {/* SCROLLABLE CONTENT AREA */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              <HomeRenderer
-                config={{ sectionsOrder: store.sections }}
-                data={(homeData as any)?.data || {}}
-                previewMode={true}
-              />
-            </div>
+{/* SCROLLABLE CONTENT AREA */}
+<div className="flex-1 overflow-y-auto custom-scrollbar">
+  <HomeRenderer
+    key={JSON.stringify(store.sections.map(s => ({ id: s.id, settings: s.settings })))}
+    config={{ sectionsOrder: store.sections }}
+    data={{
+      ...(homeData as any)?.data,
+      collections: (homeData as any)?.collections || (homeData as any)?.data?.collections || [],
+    }}
+    previewMode={true}
+  />
+</div>
           </div>
         </div>
 
