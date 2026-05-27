@@ -34,6 +34,7 @@ export const variantSchema = z.object({
 
 export const productFormSchema = z.object({
   name: z.string().min(3, "Title must be at least 3 characters"),
+  subtitle: z.string().optional(),
   description: z.string().optional(),
   categoryId: z.string().min(1, "Category is required"),
   storeId: z.string().min(1, "Store is required"),

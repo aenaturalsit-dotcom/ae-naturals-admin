@@ -39,40 +39,7 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
     latestImagesTracker.current = images || [];
   }, [images]);
 
-  // Safeguard hydration fallback: Parses stringified JSON and maps incoming image arrays
-  useEffect(() => {
-    if (initialData?.images && Array.isArray(initialData.images)) {
-      const sanitizedMedia: MediaItem[] = initialData.images.map((img: any) => {
-        if (!img) return null;
-        
-        let target = img;
-        
-        // 🔥 CRITICAL FIX: If the data item is a JSON string, parse it first!
-        if (typeof img === "string") {
-          try {
-            if (img.trim().startsWith("{")) {
-              target = JSON.parse(img);
-            } else {
-              return { url: img, type: "image" as const };
-            }
-          } catch (e) {
-            console.error("Failed to parse image JSON string:", e);
-            return { url: img, type: "image" as const };
-          }
-        }
-        
-        return {
-          url: target.url || "",
-          publicId: target.publicId || null,
-          type: (target.type === "video" || target.type === "gif" ? target.type : "image") as any,
-          posterUrl: target.posterUrl || null,
-        };
-      }).filter((item :any): item is MediaItem => Boolean(item && item.url));
-      
-      setImages(sanitizedMedia);
-    }
-  }, [initialData, setImages]);
-
+ 
   // Safely normalize media collection for rendering previews
   const normalizedMedia = normalizeMediaCollection(images || []);
 
@@ -133,6 +100,13 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                     className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" 
                   />
                 </div>
+                 <div className="space-y-1">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product subtitle</label>
+                  <input 
+                    {...form.register("subtitle")} 
+                    className="w-full p-4 border rounded-2xl focus:ring-2 focus:ring-[#006044] outline-none font-bold text-lg bg-white" 
+                  />
+                </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Product Description</label>
                   <textarea 
@@ -142,6 +116,8 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                   />
                 </div>
               </div>
+
+              
 
               {/* Media Gallery */}
               <div className="bg-zinc-50 p-8 rounded-[40px] border border-zinc-100 space-y-4">

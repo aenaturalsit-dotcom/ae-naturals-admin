@@ -57,6 +57,7 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
 
     return {
       name: data?.name || "",
+      subtitle: data?.subtitle || "",
       description: data?.description || "",
       categoryId: data?.categoryId || "",
       storeId: data?.storeId || "",
@@ -101,7 +102,7 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
   };
 
   const emptyDefaults: ProductFormValues = {
-    name: "", description: "", categoryId: "", storeId: "", isActive: true, 
+    name: "",subtitle: "", description: "", categoryId: "", storeId: "", isActive: true, 
     isFeatured: false, isCodEnabled: true, images: [], highlightIds: [], ingredients: "",
     variants: [{ name: "", sku: "", optionType: "Size", optionValue: "", price: 0.01, oldPrice: null, stock: 10, shippingWeightKg: 0, lengthCm: 0, widthCm: 0, heightCm: 0 }],
     attributes: [{ name: "", value: "" }], careInstructions: [{ value: "" }], deliveryInfo: [{ value: "" }],
@@ -110,14 +111,16 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema) as any,
-    defaultValues: initialData ? mapDataToForm(initialData) : emptyDefaults,
+    // 1. defaultValues handles the initial fallback state before data loads
+    defaultValues: emptyDefaults,
+    // 2. PRODUCTION FIX: 'values' reactively updates the form whenever async initialData arrives
+    values: initialData ? mapDataToForm(initialData) : undefined,
+   // 3. CRITICAL: Prevents background updates or parallel adjustments from clobbering what the user types
+    resetOptions: {
+      keepDirtyValues: true, 
+    }
   });
 
-  useEffect(() => {
-    if (initialData) {
-      form.reset(mapDataToForm(initialData));
-    }
-  }, [initialData, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
