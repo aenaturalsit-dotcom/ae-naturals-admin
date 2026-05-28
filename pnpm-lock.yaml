@@ -74,6 +74,9 @@ importers:
       react-hot-toast:
         specifier: ^2.6.0
         version: 2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      set-cookie-parser:
+        specifier: ^3.1.0
+        version: 3.1.0
       shadcn:
         specifier: ^4.3.0
         version: 4.8.0(@types/node@20.19.41)(typescript@5.9.3)

@@ -3,8 +3,12 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { cookies } from "next/headers";
+import setCookieParser from "set-cookie-parser";
 
-const MAX_AGE_DAYS = parseInt(process.env.REFRESH_TOKEN_MAX_AGE_DAYS || "7", 10);
+const MAX_AGE_DAYS = parseInt(
+  process.env.REFRESH_TOKEN_MAX_AGE_DAYS || "7",
+  10,
+);
 const COOKIE_MAX_AGE_SECONDS = MAX_AGE_DAYS * 24 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
@@ -21,24 +25,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-          method: "POST",
-          body: JSON.stringify(credentials),
-          headers: { "Content-Type": "application/json" },
-        });
-        
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+          {
+            method: "POST",
+            body: JSON.stringify(credentials),
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
         const setCookieHeader = res.headers.get("set-cookie");
         if (setCookieHeader) {
-          const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
-          if (refreshTokenMatch) {
+          const parsedCookies = setCookieParser.parse(setCookieHeader, {
+            map: true,
+          });
+
+          const refreshToken = parsedCookies.refresh_token?.value;
+
+          if (refreshToken) {
             const cookieStore = await cookies();
             cookieStore.set({
               name: "refresh_token",
-              value: refreshTokenMatch[1],
+              value: refreshToken,
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               path: "/",
-              maxAge: COOKIE_MAX_AGE_SECONDS, 
+              maxAge: COOKIE_MAX_AGE_SECONDS,
             });
           }
         }
@@ -55,22 +67,29 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }: any) {
       if (account?.provider === "google") {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/check-admin?email=${user.email}`);
-          
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/users/check-admin?email=${user.email}`,
+          );
+
           const setCookieHeader = res.headers.get("set-cookie");
           if (setCookieHeader) {
-             const refreshTokenMatch = setCookieHeader.match(/refresh_token=([^;]+)/);
-             if (refreshTokenMatch) {
-               const cookieStore = await cookies();
-               cookieStore.set({
-                 name: "refresh_token",
-                 value: refreshTokenMatch[1],
-                 httpOnly: true,
-                 secure: process.env.NODE_ENV === "production",
-                 path: "/",
-                 maxAge: COOKIE_MAX_AGE_SECONDS,
-               });
-             }
+            const parsedCookies = setCookieParser.parse(setCookieHeader, {
+            map: true,
+          });
+
+          const refreshToken = parsedCookies.refresh_token?.value;
+
+            if (refreshToken) {
+              const cookieStore = await cookies();
+              cookieStore.set({
+                name: "refresh_token",
+                value: refreshToken,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                path: "/",
+                maxAge: COOKIE_MAX_AGE_SECONDS,
+              });
+            }
           }
 
           const data = await res.json();
@@ -79,7 +98,7 @@ export const authOptions: NextAuthOptions = {
             user.role = "STORE_MANAGER";
             return true;
           }
-          return false; 
+          return false;
         } catch (error) {
           return false;
         }
@@ -100,7 +119,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: { signIn: "/admin/login" },
-  secret: process.env.NEXT_PUBLIC_NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.3.0",
-
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -33,6 +32,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
     "react-hot-toast": "^2.6.0",
+    "set-cookie-parser": "^3.1.0",
     "shadcn": "^4.3.0",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0",
