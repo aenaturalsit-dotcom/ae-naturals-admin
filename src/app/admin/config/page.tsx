@@ -1,3 +1,6 @@
+// src\app\admin\config\page.tsx
+
+
 "use client";
 
 import React, { useState } from "react";
@@ -63,10 +66,24 @@ export default function GeneralConfigPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data: ProviderConfig) =>
-      data.id
-        ? adminProvidersService.updateProvider(data.id, data)
-        : adminProvidersService.createProvider(data),
+    mutationFn: (data: ProviderConfig) => {
+  // ✅ Remove readonly/system fields before PATCH
+  const payload = {
+    type: data.type,
+    provider: data.provider,
+    isActive: data.isActive,
+    priority: data.priority,
+    config: data.config,
+
+    // NEW SHIPPING RULE ENGINE FIELDS
+    bypassProvider: (data as any).bypassProvider ?? false,
+    shippingRules: (data as any).shippingRules ?? [],
+  };
+
+  return data.id
+    ? adminProvidersService.updateProvider(data.id, payload)
+    : adminProvidersService.createProvider(payload);
+},
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["providers", activeTab] });
       setIsModalOpen(false);

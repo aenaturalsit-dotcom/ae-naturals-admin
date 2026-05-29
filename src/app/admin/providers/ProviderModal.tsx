@@ -34,7 +34,7 @@ export default function ProviderModal({
         // Default empty state for "Add New"
         setFormData({
           // Force TypeScript to accept the passed string as the correct enum type
-          type: activeType as "EMAIL" | "SMS" | "PAYMENT" | "OTHER",
+          type: activeType as "EMAIL" | "SMS" | "PAYMENT" | "SHIPPING",
           provider: "",
           isActive: false,
           priority: 1,

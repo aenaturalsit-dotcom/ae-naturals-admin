@@ -25,6 +25,7 @@ const FIELD_TYPES: Record<string, 'string' | 'number' | 'boolean'> = {
   secure: 'boolean',
   is_production: 'boolean',
   show_estimation: 'boolean',
+  bypassProvider: 'boolean',
 };
 
 /* ---------------------- TYPES ---------------------- */
@@ -310,6 +311,10 @@ CASHFREE: [
     placeholder: 'Delhivery',
     note: 'Optional default courier partner to prioritize when customers do not manually choose a shipping provider.',
   },
+  {
+  key: 'bypassProvider',
+  note: 'Disable Shiprocket APIs and use custom shipping rules.',
+},
 ],
 
     DELHIVERY: [
@@ -361,7 +366,14 @@ export default function ProviderModal({
   const [config, setConfig] = useState<Record<string, any>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
-
+const [shippingRules, setShippingRules] = useState<any[]>([
+  {
+    freeShippingAbove: 499,
+    flatShippingCharge: 100,
+    codExtraCharge: 50,
+    estimatedDays: "3-5 Days",
+  },
+]);
   const availableProviders = Object.keys(
     PROVIDER_SCHEMAS[activeType] || {}
   );
@@ -383,12 +395,23 @@ export default function ProviderModal({
         setIsActive(initialData.isActive);
         setPriority(initialData.priority);
         setConfig(initialData.config || {});
+        setShippingRules(
+  initialData?.shippingRules || [
+    {
+      freeShippingAbove: 499,
+      flatShippingCharge: 100,
+      codExtraCharge: 50,
+      estimatedDays: "3-5 Days",
+    },
+  ]
+);
       } else {
         const defaultProv = availableProviders[0] || '';
         setProviderName(defaultProv);
         setIsActive(true);
         setPriority(1);
         setConfig(defaultProv ? getEmptyConfig(defaultProv) : {});
+        
       }
 
       setShowSecrets({});
@@ -466,6 +489,14 @@ export default function ProviderModal({
         isActive,
         priority,
         config,
+
+bypassProvider:
+  config.bypassProvider || false,
+
+shippingRules:
+  config.bypassProvider
+    ? shippingRules
+    : [],
       });
 
       toast.success('Provider configuration saved successfully!');
@@ -634,6 +665,128 @@ export default function ProviderModal({
               </div>
             );
           })}
+
+          {activeType === "SHIPPING" && (
+  <div className="border rounded-2xl p-5 space-y-5 bg-orange-50/40">
+
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="font-semibold text-gray-900">
+          Bypass Shipping Provider
+        </h3>
+
+        <p className="text-xs text-gray-500 mt-1">
+          Disable Shiprocket and use custom rules engine.
+        </p>
+      </div>
+
+      <Switch
+        checked={config.bypassProvider || false}
+        onChange={(value) =>
+          setConfig({
+            ...config,
+            bypassProvider: value,
+          })
+        }
+      />
+    </div>
+
+    {config.bypassProvider && (
+      <div className="space-y-4">
+
+        {shippingRules.map((rule, index) => (
+          <div
+            key={index}
+            className="grid grid-cols-2 gap-4 border rounded-xl p-4 bg-white"
+          >
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">
+                Free Shipping Above
+              </label>
+
+              <input
+                type="number"
+                value={rule.freeShippingAbove}
+                onChange={(e) => {
+                  const updated = [...shippingRules];
+
+                  updated[index].freeShippingAbove =
+                    Number(e.target.value);
+
+                  setShippingRules(updated);
+                }}
+                className="w-full mt-1 px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">
+                Flat Shipping Charge
+              </label>
+
+              <input
+                type="number"
+                value={rule.flatShippingCharge}
+                onChange={(e) => {
+                  const updated = [...shippingRules];
+
+                  updated[index].flatShippingCharge =
+                    Number(e.target.value);
+
+                  setShippingRules(updated);
+                }}
+                className="w-full mt-1 px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">
+                COD Extra Charge
+              </label>
+
+              <input
+                type="number"
+                value={rule.codExtraCharge}
+                onChange={(e) => {
+                  const updated = [...shippingRules];
+
+                  updated[index].codExtraCharge =
+                    Number(e.target.value);
+
+                  setShippingRules(updated);
+                }}
+                className="w-full mt-1 px-3 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600">
+                Estimated Delivery
+              </label>
+
+              <input
+                type="text"
+                value={rule.estimatedDays}
+                onChange={(e) => {
+                  const updated = [...shippingRules];
+
+                  updated[index].estimatedDays =
+                    e.target.value;
+
+                  setShippingRules(updated);
+                }}
+                className="w-full mt-1 px-3 py-2 border rounded-lg"
+                placeholder="3-5 Days"
+              />
+            </div>
+
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
         </div>
 
         {/* FOOTER */}
