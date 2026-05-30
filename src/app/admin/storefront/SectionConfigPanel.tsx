@@ -11,7 +11,12 @@ import { useState } from "react";
 import { AdminProductSearchModal } from "../AdminProductSearchModal";
 
 export function SectionConfigPanel() {
-  const { sections, activeSectionId, updateSectionSettings } = useStorefrontStore();
+  const {
+    sections,
+    activeSectionId,
+    updateSectionSettings,
+    updateHeroBannerImage,
+  } = useStorefrontStore();
   const activeSection = sections.find((s) => s.id === activeSectionId);
 
   const isValidImageUrl = (url?: string) => {
@@ -29,12 +34,9 @@ export function SectionConfigPanel() {
   const isProductCarousel = activeSection?.type === "PRODUCT_CAROUSEL";
   const isVideoShoppable = activeSection?.type === "VIDEO_SHOPPABLE";
   const isHeroSection = activeSection?.type === "HERO";
-  
+
   const needsCollectionsData =
-    isCollectionBlock ||
-    isProductCarousel ||
-    isVideoShoppable ||
-    isHeroSection;
+    isCollectionBlock || isProductCarousel || isVideoShoppable || isHeroSection;
 
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(null);
@@ -49,7 +51,7 @@ export function SectionConfigPanel() {
     queryFn: async () => {
       try {
         const res: any = await apiClient.get(
-          `/admin/collections?t=${Date.now()}`
+          `/admin/collections?t=${Date.now()}`,
         );
         if (Array.isArray(res)) return res;
         if (res?.data && Array.isArray(res.data)) return res.data;
@@ -59,7 +61,7 @@ export function SectionConfigPanel() {
         return [];
       }
     },
-    enabled: needsCollectionsData, 
+    enabled: needsCollectionsData,
   });
 
   if (!activeSection) {
@@ -102,7 +104,7 @@ export function SectionConfigPanel() {
         }}
         onSelect={(product) => {
           if (activeSlideIndex === null) return;
-          
+
           const currentSlides = activeSection.settings.slides || [];
           const updatedSlides = [...currentSlides];
           updatedSlides[activeSlideIndex].product = {
@@ -174,8 +176,9 @@ export function SectionConfigPanel() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {safeCollections.map((col: any) => {
-                  const isSelected = String(selectedCollectionId) === String(col.id);
-                  
+                  const isSelected =
+                    String(selectedCollectionId) === String(col.id);
+
                   return (
                     <button
                       key={col.id}
@@ -187,9 +190,17 @@ export function SectionConfigPanel() {
                           : "bg-white text-zinc-600 border-zinc-200 hover:border-[#006044] hover:bg-[#006044]/5 hover:text-[#006044]"
                       }`}
                     >
-                      {col.name} 
+                      {col.name}
                       {isSelected && (
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                       )}
@@ -200,7 +211,7 @@ export function SectionConfigPanel() {
             )}
           </div>
         )}
-        
+
         {/* IMAGE UPLOAD */}
         {["PROMO_BANNER", "BRAND_STORY"].includes(activeSection.type) && (
           <div className="space-y-3 pt-2">
@@ -332,8 +343,11 @@ export function SectionConfigPanel() {
         {/* ================================================== */}
         {/* HERO CONFIGURATION                                 */}
         {/* ================================================== */}
+        {/* ================================================== */}
+        {/* HERO CONFIGURATION                                 */}
+        {/* ================================================== */}
         {activeSection.type === "HERO" && (
-          <div className="space-y-4 pt-2">
+          <div className="space-y-5 pt-2">
             <div className="flex justify-between items-center">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 Hero Slides (Max 5)
@@ -351,156 +365,244 @@ export function SectionConfigPanel() {
               </button>
             </div>
 
-            {/* Existing Slides List */}
-            <div className="space-y-3">
+            <div className="space-y-5">
               {((activeSection.settings.banners as any[]) || []).map(
                 (slide, index) => (
                   <div
                     key={index}
-                    className="flex items-start gap-4 p-4 bg-zinc-50 border border-zinc-200 rounded-2xl"
+                    className="bg-zinc-50 border border-zinc-200 rounded-3xl p-5 space-y-5"
                   >
-                    {/* Thumbnail Preview */}
-                    <img
-                      src={slide.imageUrl}
-                      alt={`Slide ${index}`}
-                      className="w-20 h-14 object-cover rounded-xl border"
-                    />
+                    {/* HEADER */}
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-black text-sm">Slide #{index + 1}</h4>
 
-                    {/* Slide Config */}
-                    <div className="flex-1 space-y-3">
-                      <select
-                        value={slide.collectionId || ""}
-                        onChange={(e) => {
-                          const selectedCollection = safeCollections.find(
-                            (c: any) => c.id === e.target.value
-                          );
-                          const newBanners = [
-                            ...(activeSection.settings.banners as any[]),
-                          ];
-
-                          newBanners[index] = {
-                            ...newBanners[index],
-                            collectionId: selectedCollection?.id || "",
-                            link: selectedCollection
-                              ? `/collections/${selectedCollection.slug}`
-                              : "",
-                          };
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newBanners = (
+                            activeSection.settings.banners as any[]
+                          ).filter((_, i) => i !== index);
 
                           updateSectionSettings(activeSection.id, {
                             banners: newBanners,
                           });
                         }}
-                        className="w-full text-xs p-3 border border-zinc-200 rounded-xl outline-none"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-xl"
                       >
-                        <option value="">Select Collection (Auto-fills link)</option>
-                        {safeCollections.map((collection: any) => (
-                          <option
-                            key={collection.id}
-                            value={collection.id}
-                          >
-                            {collection.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        type="text"
-                        value={slide.link || ""}
-                        onChange={(e) => {
-                          const newBanners = [...(activeSection.settings.banners as any[])];
-                          newBanners[index] = {
-                            ...newBanners[index],
-                            link: e.target.value,
-                          };
-                          updateSectionSettings(activeSection.id, {
-                            banners: newBanners,
-                          });
-                        }}
-                        placeholder="Custom link (e.g., /pages/about or https://...)"
-                        className="w-full text-xs p-3 border border-zinc-200 rounded-xl bg-white focus:ring-2 focus:ring-[#006044] outline-none transition-all"
-                      />
+                        <Trash2 size={16} />
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newBanners = (
-                          activeSection.settings.banners as any[]
-                        ).filter((_, i) => i !== index);
+                    {/* IMAGE GRID */}
+                    <div className="flex flex-col gap-4">
+                      {[
+                        {
+                          key: "desktopImageUrl",
+                          label: "Desktop Image",
+                          guide: "1920×800",
+                        },
+                        {
+                          key: "tabletImageUrl",
+                          label: "Tablet Image",
+                          guide: "1200×900",
+                        },
+                        {
+                          key: "mobileImageUrl",
+                          label: "Mobile Image",
+                          guide: "768×1024",
+                        },
+                      ].map((field: any) => (
+                        <div key={field.key} className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                            {field.label}
+                          </label>
+
+                          {slide[field.key] ? (
+                            <div className="relative h-40 rounded-2xl overflow-hidden border">
+                              <img
+                                src={slide[field.key]}
+                                className="w-full h-full object-cover"
+                                alt={field.label}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const banners = [
+                                    ...(activeSection.settings
+                                      .banners as any[]),
+                                  ];
+
+                                  banners[index] = {
+                                    ...banners[index],
+                                    [field.key]: "",
+                                  };
+
+                                  updateSectionSettings(activeSection.id, {
+                                    banners,
+                                  });
+                                }}
+                                className="absolute top-2 right-2 bg-white rounded-full p-2"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <CldUploadWidget
+                              uploadPreset={
+                                process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+                              }
+                              options={{
+                                multiple: false,
+                              }}
+                              onSuccess={(result: any) => {
+                                if (result.event === "success") {
+                                  const latestState =
+                                    useStorefrontStore.getState();
+
+                                  const latestSection =
+                                    latestState.sections.find(
+                                      (s) => s.id === activeSection.id,
+                                    );
+
+                                  const banners = [
+                                    ...(((latestSection?.settings as any)
+                                      ?.banners as any[]) || []),
+                                  ];
+
+                                  banners[index] = {
+                                    ...banners[index],
+                                    [field.key]: result.info.secure_url,
+                                  };
+
+                                  latestState.updateSectionSettings(
+                                    activeSection.id,
+                                    {
+                                      banners,
+                                    },
+                                  );
+                                }
+                              }}
+                            >
+                              {({ open }) => (
+                                <button
+                                  type="button"
+                                  onClick={() => open()}
+                                  className="h-40 w-full border-2 border-dashed border-zinc-300 rounded-2xl flex flex-col items-center justify-center hover:bg-green-50 hover:border-[#006044]"
+                                >
+                                  <Upload size={22} />
+                                  <span className="mt-2 text-xs font-bold">
+                                    Upload
+                                  </span>
+                                  <span className="text-[10px] text-zinc-400">
+                                    {field.guide}
+                                  </span>
+                                </button>
+                              )}
+                            </CldUploadWidget>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* COLLECTION */}
+                    <select
+                      value={slide.collectionId || ""}
+                      onChange={(e) => {
+                        const selectedCollection = safeCollections.find(
+                          (c: any) => c.id === e.target.value,
+                        );
+
+                        const banners = [
+                          ...(activeSection.settings.banners as any[]),
+                        ];
+
+                        banners[index] = {
+                          ...banners[index],
+                          collectionId: selectedCollection?.id || "",
+                          link: selectedCollection
+                            ? `/collections/${selectedCollection.slug}`
+                            : "",
+                        };
 
                         updateSectionSettings(activeSection.id, {
-                          banners: newBanners,
+                          banners,
                         });
                       }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl mt-1"
+                      className="w-full p-4 border rounded-2xl"
                     >
-                      <X size={16} strokeWidth={3} />
-                    </button>
+                      <option value="">Select Collection</option>
+
+                      {safeCollections.map((collection: any) => (
+                        <option key={collection.id} value={collection.id}>
+                          {collection.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* LINK */}
+                    <input
+                      type="text"
+                      value={slide.link || ""}
+                      onChange={(e) => {
+                        const banners = [
+                          ...(activeSection.settings.banners as any[]),
+                        ];
+
+                        banners[index] = {
+                          ...banners[index],
+                          link: e.target.value,
+                        };
+
+                        updateSectionSettings(activeSection.id, {
+                          banners,
+                        });
+                      }}
+                      placeholder="Custom Link"
+                      className="w-full p-4 border rounded-2xl"
+                    />
                   </div>
-                )
+                ),
               )}
             </div>
 
-            {/* Upload New Hero Slide */}
-            {(((activeSection.settings.banners as any[]) || []).length < 5) ? (
-              <CldUploadWidget
-                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                options={{
-                  multiple: true, // Allow batch uploads
-                  maxFiles: 5,    // Native limit in Cloudinary file picker
-                }}
-                onSuccess={(result: any) => {
-                  if (result.event === "success") {
-                    // 🚀 BUG FIX: Prevent "Stale Closures" which caused images to overwrite each other.
-                    // By grabbing the state directly from the store on every success callback, 
-                    // we guarantee we are appending to the most up-to-date array during batch uploads.
-                    const freshSections = useStorefrontStore.getState().sections;
-                    const freshSection = freshSections.find((s) => s.id === activeSection.id);
-                    const currentBanners = (freshSection?.settings?.banners as any[]) || [];
+            {/* ADD NEW SLIDE */}
+            {((activeSection.settings.banners as any[]) || []).length < 5 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentBanners =
+                    (activeSection.settings.banners as any[]) || [];
 
-                    // Enforce absolute max of 5
-                    if (currentBanners.length >= 5) return;
-
-                    updateSectionSettings(activeSection.id, {
-                      banners: [
-                        ...currentBanners,
-                        {
-                          imageUrl: result.info.secure_url,
-                          collectionId: "",
-                          link: "",
-                        },
-                      ],
-                    });
-                  }
+                  updateSectionSettings(activeSection.id, {
+                    banners: [
+                      ...currentBanners,
+                      {
+                        desktopImageUrl: "",
+                        tabletImageUrl: "",
+                        mobileImageUrl: "",
+                        collectionId: "",
+                        link: "",
+                      },
+                    ],
+                  });
                 }}
+                className="w-full py-4 border-2 border-dashed border-[#006044]/30 rounded-2xl flex items-center justify-center gap-2 text-[#006044] font-bold text-xs"
               >
-                {({ open }) => (
-                  <button
-                    type="button"
-                    onClick={() => open()}
-                    className="w-full py-4 border-2 border-dashed border-[#006044]/30 rounded-2xl flex items-center justify-center gap-2 text-[#006044] font-bold text-xs mt-2 hover:bg-[#006044]/5 transition-all"
-                  >
-                    <Upload size={16} />
-                    Add New Slide (Select up to 5)
-                  </button>
-                )}
-              </CldUploadWidget>
-            ) : (
-              <div className="w-full py-4 border border-amber-200 bg-amber-50 rounded-2xl flex items-center justify-center gap-2 text-amber-700 font-bold text-xs mt-2">
-                Maximum limit of 5 slides reached. Remove a slide to add more.
-              </div>
+                <Upload size={16} />
+                Add Hero Slide
+              </button>
             )}
 
-            <p className="mt-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-xs font-semibold">
-              ⚠ Recommended:{" "}
-              <span className="font-bold">
-                {
-                  IMAGE_GUIDELINES[
-                    activeSection.type as keyof typeof IMAGE_GUIDELINES
-                  ]
-                }
-              </span>
-            </p>
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-700">
+              <div className="font-bold mb-2">Recommended Sizes</div>
+
+              <ul className="space-y-1">
+                <li>Desktop → 1920 × 800</li>
+                <li>Tablet → 1200 × 900</li>
+                <li>Mobile → 768 × 1024</li>
+              </ul>
+            </div>
           </div>
         )}
 
@@ -555,7 +657,7 @@ export function SectionConfigPanel() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-4 pt-4 border-t border-zinc-100">
               <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 Image Alignment
@@ -805,7 +907,7 @@ export function SectionConfigPanel() {
                                 result.info.bytes / (1024 * 1024);
                               if (fileSizeMB > 15) {
                                 alert(
-                                  "Video is too large. Please upload files under 15MB for optimal performance."
+                                  "Video is too large. Please upload files under 15MB for optimal performance.",
                                 );
                                 return;
                               }
@@ -883,7 +985,7 @@ export function SectionConfigPanel() {
                       )}
                     </div>
                   </div>
-                )
+                ),
               )}
             </div>
 

@@ -16,6 +16,12 @@ interface StorefrontState {
   removeSection: (id: string) => void;
   reorderSections: (oldIndex: number, newIndex: number) => void;
   updateSectionSettings: (id: string, settings: any) => void;
+  updateHeroBannerImage: (
+  sectionId: string,
+  bannerIndex: number,
+  field: string,
+  imageUrl: string
+) => void;
   toggleSectionActive: (id: string) => void;
   resetDirty: () => void;
 }
@@ -60,7 +66,35 @@ export const useStorefrontStore = create<StorefrontState>((set) => ({
     ),
     isDirty: true,
   })),
+updateHeroBannerImage: (
+  sectionId,
+  bannerIndex,
+  field,
+  imageUrl
+) =>
+  set((state) => ({
+    sections: state.sections.map((section) => {
+      if (section.id !== sectionId) return section;
 
+      const banners = [
+        ...(((section.settings as any).banners as any[]) || []),
+      ];
+
+      banners[bannerIndex] = {
+        ...banners[bannerIndex],
+        [field]: imageUrl,
+      };
+
+      return {
+        ...section,
+        settings: {
+          ...section.settings,
+          banners,
+        },
+      };
+    }),
+    isDirty: true,
+  })),
   toggleSectionActive: (id) => set((state) => ({
     sections: state.sections.map((s) =>
       s.id === id ? { ...s, isActive: !s.isActive } : s

@@ -14,7 +14,10 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 
 interface HeroBannerItem {
-  imageUrl: string;
+  imageUrl?: string;
+  desktopImageUrl?: string;
+  tabletImageUrl?: string;
+  mobileImageUrl?: string;
   link?: string;
   collectionId?: string;
   altText?: string;
@@ -41,42 +44,101 @@ export const HeroBanner = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  const [screenWidth, setScreenWidth] = useState(1920);
+
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+
+  /**
+   * Track screen width
+   */
+  useEffect(() => {
+    const updateWidth = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    updateWidth();
+
+    window.addEventListener("resize", updateWidth);
+
+    return () => {
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
 
   /**
    * Normalize data from builder/backend
    */
   const banners = useMemo(() => {
     const source =
-      settings?.banners?.length && settings.banners.length > 0
+      settings?.banners?.length &&
+      settings.banners.length > 0
         ? settings.banners
         : data;
 
     return source
-      .map((banner: any) => ({
-        imageUrl:
+      .map((banner: any) => {
+        let imageUrl =
           banner?.imageUrl ||
           banner?.content?.imageUrl ||
           banner?.content?.image ||
-          "",
-        link:
-          banner?.link ||
-          banner?.content?.link ||
-          banner?.content?.url ||
-          "",
-        collectionId:
-          banner?.collectionId ||
-          banner?.content?.collectionId ||
-          "",
-        altText:
-          banner?.altText ||
-          banner?.content?.altText ||
-          banner?.title ||
-          "Hero Banner",
-      }))
-      .filter((banner: HeroBannerItem) => Boolean(banner.imageUrl));
-  }, [data, settings]);
+          "";
+
+        if (screenWidth < 768) {
+          imageUrl =
+            banner?.mobileImageUrl ||
+            banner?.content?.mobileImageUrl ||
+            imageUrl;
+        } else if (screenWidth < 1024) {
+          imageUrl =
+            banner?.tabletImageUrl ||
+            banner?.content?.tabletImageUrl ||
+            imageUrl;
+        } else {
+          imageUrl =
+            banner?.desktopImageUrl ||
+            banner?.content?.desktopImageUrl ||
+            imageUrl;
+        }
+
+        return {
+          imageUrl,
+
+          desktopImageUrl:
+            banner?.desktopImageUrl ||
+            banner?.content?.desktopImageUrl ||
+            "",
+
+          tabletImageUrl:
+            banner?.tabletImageUrl ||
+            banner?.content?.tabletImageUrl ||
+            "",
+
+          mobileImageUrl:
+            banner?.mobileImageUrl ||
+            banner?.content?.mobileImageUrl ||
+            "",
+
+          link:
+            banner?.link ||
+            banner?.content?.link ||
+            banner?.content?.url ||
+            "",
+
+          collectionId:
+            banner?.collectionId ||
+            banner?.content?.collectionId ||
+            "",
+
+          altText:
+            banner?.altText ||
+            banner?.content?.altText ||
+            banner?.title ||
+            "Hero Banner",
+        };
+      })
+      .filter((banner: HeroBannerItem) => !!banner.imageUrl);
+  }, [data, settings, screenWidth]);
 
   const totalSlides = banners.length;
 
@@ -84,8 +146,10 @@ export const HeroBanner = ({
    * Safe autoplay config
    */
   const autoplayEnabled = settings?.autoplay ?? true;
+
   const autoplayDelay =
-    settings?.autoplayDelay ?? DEFAULT_AUTO_SLIDE_INTERVAL;
+    settings?.autoplayDelay ??
+    DEFAULT_AUTO_SLIDE_INTERVAL;
 
   /**
    * Navigation
@@ -113,7 +177,10 @@ export const HeroBanner = ({
     if (isPaused) return;
     if (totalSlides <= 1) return;
 
-    const timer = setInterval(goToNext, autoplayDelay);
+    const timer = setInterval(
+      goToNext,
+      autoplayDelay
+    );
 
     return () => clearInterval(timer);
   }, [
@@ -125,7 +192,7 @@ export const HeroBanner = ({
   ]);
 
   /**
-   * Keep index valid after config changes
+   * Keep index valid
    */
   useEffect(() => {
     if (currentIndex >= totalSlides) {
@@ -142,13 +209,19 @@ export const HeroBanner = ({
     setIsPaused(false);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = (
+    e: React.TouchEvent
+  ) => {
     setIsPaused(true);
-    touchStartX.current = e.touches[0].clientX;
+    touchStartX.current =
+      e.touches[0].clientX;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+  const handleTouchMove = (
+    e: React.TouchEvent
+  ) => {
+    touchEndX.current =
+      e.touches[0].clientX;
   };
 
   const handleTouchEnd = () => {
@@ -161,9 +234,13 @@ export const HeroBanner = ({
     }
 
     const distance =
-      touchStartX.current - touchEndX.current;
+      touchStartX.current -
+      touchEndX.current;
 
-    if (Math.abs(distance) > MIN_SWIPE_DISTANCE) {
+    if (
+      Math.abs(distance) >
+      MIN_SWIPE_DISTANCE
+    ) {
       if (distance > 0) {
         goToNext();
       } else {
@@ -175,14 +252,14 @@ export const HeroBanner = ({
   };
 
   /**
-   * Empty state (important for builder preview)
+   * Empty state
    */
   if (!totalSlides) {
     if (!previewMode) return null;
 
     return (
       <section className="w-full bg-gradient-to-b from-zinc-50 via-white to-zinc-100">
-        <div className="aspect-[4/5] md:aspect-[16/7] w-full flex items-center justify-center px-6 py-10">
+        <div className="min-h-[420px] md:min-h-[550px] flex items-center justify-center px-6 py-10">
           <div className="w-full max-w-lg rounded-[32px] border-2 border-dashed border-zinc-200 bg-white p-8 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100">
               <ImageIcon className="h-8 w-8 text-zinc-400" />
@@ -193,8 +270,8 @@ export const HeroBanner = ({
             </h3>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Add hero banners from the configuration panel to
-              preview them here.
+              Add hero banners from the configuration panel
+              to preview them here.
             </p>
           </div>
         </div>
@@ -213,9 +290,19 @@ export const HeroBanner = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Slides */}
-        <div className="relative aspect-[4/5] sm:aspect-[4/3] md:aspect-[16/8] lg:aspect-[16/7] xl:aspect-[16/6] w-full">
+        <div
+          className="
+            relative
+            w-full
+            min-h-[420px]
+            md:min-h-[550px]
+            lg:min-h-[650px]
+            xl:min-h-[750px]
+          "
+        >
           {banners.map((banner, index) => {
-            const isActive = index === currentIndex;
+            const isActive =
+              index === currentIndex;
 
             const href =
               banner.link?.trim() ||
@@ -239,12 +326,18 @@ export const HeroBanner = ({
                   href={href}
                   draggable={false}
                   className="block h-full w-full"
-                  aria-label={banner.altText || "Hero Banner"}
+                  aria-label={
+                    banner.altText ||
+                    "Hero Banner"
+                  }
                 >
-                  <div className="relative h-full w-full">
+                  <div className="absolute inset-0">
                     <Image
-                      src={banner.imageUrl}
-                      alt={banner.altText || "Hero Banner"}
+                      src={banner.imageUrl || ""}
+                      alt={
+                        banner.altText ||
+                        "Hero Banner"
+                      }
                       fill
                       priority={index === 0}
                       sizes="100vw"
@@ -305,14 +398,19 @@ export const HeroBanner = ({
         {totalSlides > 1 && (
           <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/20 backdrop-blur-md px-3 py-2">
             {banners.map((_, index) => {
-              const active = index === currentIndex;
+              const active =
+                index === currentIndex;
 
               return (
                 <button
                   key={index}
                   type="button"
-                  onClick={() => setCurrentIndex(index)}
-                  aria-label={`Go to slide ${index + 1}`}
+                  onClick={() =>
+                    setCurrentIndex(index)
+                  }
+                  aria-label={`Go to slide ${
+                    index + 1
+                  }`}
                   className={`
                     rounded-full transition-all duration-300
                     ${
