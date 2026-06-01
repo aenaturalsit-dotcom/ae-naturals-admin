@@ -5,6 +5,7 @@ export const BRAND = {
   useStoreName: "ae-naturals",
   logo: "https://res.cloudinary.com/djunjtr5l/image/upload/f_auto,q_auto/v1778848925/logo_rogjqa.png", // <-- Add your logo here (emoji or image path)
 
+
   phone: "+91 8553463261",
   whatsapp: "+91 8553463261",
   email: "care@aenaturals.in",
@@ -24,9 +25,9 @@ export const BRAND = {
   },
 
   theme: {
-    primary: "#217A6E",
-    secondary: "#006044",
-    accent: "#F0FDF4",
+    primary: "#606c38",
+    secondary: "#283618",
+    accent: "#fefae0",
 
     success: "#10B981",
     warning: "#F59E0B",
@@ -34,8 +35,8 @@ export const BRAND = {
     info: "#3B82F6",
 
     neutral: {
-      light: "#F9FAFB",
-      dark: "#0F1715",
+      light: "#dda15e",
+      dark: "#bc6c25",
       border: "#E5E7EB",
       muted: "#502858",
     },
