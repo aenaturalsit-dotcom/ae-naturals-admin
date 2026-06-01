@@ -15,6 +15,8 @@ import {
   Undo2, Truck
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { BRAND } from "@/config/brand.config";
+
 
 export const Sidebar = ({
   isOpen,
@@ -100,12 +102,13 @@ export const Sidebar = ({
       <aside className={`
         fixed top-0 left-0 z-50 h-full
         w-[85%] max-w-[280px]
-        bg-[#09090b] border-r border-zinc-800/60
+        border-r border-zinc-800/60
         transform transition-transform duration-300 ease-in-out
         flex flex-col
         lg:static lg:translate-x-0 lg:w-[260px]
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `}
+        style={{ backgroundColor: BRAND.theme.neutral.muted }}>
 
         {/* Header / Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800/60 shrink-0">
@@ -113,7 +116,7 @@ export const Sidebar = ({
             <div className="bg-[#10b981]/15 p-1.5 rounded-lg border border-[#10b981]/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                <Leaf className="w-5 h-5 text-[#10b981]" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-zinc-100 text-lg tracking-tight">AE-Naturals</span>
+            <span className="font-bold text-zinc-100 text-lg tracking-tight">{BRAND.name}</span>
           </div>
 
           <button onClick={() => setIsOpen(false)} className="lg:hidden text-zinc-400 hover:text-zinc-100 transition-colors">
@@ -127,7 +130,7 @@ export const Sidebar = ({
             <div key={groupIndex} className="space-y-1.5">
               {/* Category Header */}
               {group.title !== "Overview" && (
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2 px-3">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-white mb-2 px-3">
                   {group.title}
                 </h4>
               )}
@@ -146,7 +149,7 @@ export const Sidebar = ({
                       group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 overflow-hidden
                       ${active
                         ? 'bg-[#10b981]/10 text-[#10b981]' // Active styling
-                        : 'text-zinc-400 hover:bg-zinc-800/40 hover:text-zinc-200' // Inactive styling
+                        : 'text-white hover:bg-zinc-800/40 hover:text-zinc-200' // Inactive styling
                       }
                     `}
                   >
@@ -156,9 +159,9 @@ export const Sidebar = ({
                     )}
 
                     <Icon 
-                      size={18} 
+                      size={20} 
                       strokeWidth={active ? 2.5 : 2} 
-                      className={`transition-colors duration-200 ${active ? 'text-[#10b981]' : 'text-zinc-500 group-hover:text-zinc-300'}`} 
+                      className={`transition-colors text-bold duration-200 ${active ? 'text-[#10b981]' : 'text-white group-hover:text-zinc-300'}`} 
                     />
                     <span className="truncate">{item.label}</span>
                   </Link>
