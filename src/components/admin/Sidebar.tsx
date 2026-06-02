@@ -108,7 +108,7 @@ export const Sidebar = ({
         lg:static lg:translate-x-0 lg:w-[260px]
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}
-        style={{ backgroundColor: BRAND.theme.neutral.muted }}>
+        style={{ backgroundColor: BRAND.theme.secondary }}>
 
         {/* Header / Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800/60 shrink-0">
@@ -175,9 +175,9 @@ export const Sidebar = ({
         <div className="p-4 border-t border-zinc-800/60 shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full group flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 rounded-xl transition-all duration-200"
+            className="w-full group flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-white hover:text-zinc-200 hover:bg-zinc-800/40 rounded-xl transition-all duration-200"
           >
-            <LogOut size={18} className="text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+            <LogOut size={18} className="text-white group-hover:text-zinc-300 transition-colors" />
             Logout
           </button>
         </div>

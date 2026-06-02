@@ -52,62 +52,84 @@ export const orderColumns: ColumnDef<any>[] = [
     ),
   },
   {
-    id: "paymentStatus",
-    header: "Payment status",
-    cell: ({ row }) => {
-      // 🟢 REPLACE WITH THIS:
-      const status = row.original.status;
-      const provider = row.original.paymentProvider;
+  id: "paymentStatus",
+  header: "Payment Status",
+  cell: ({ row }) => {
+    const paymentStatus = row.original.paymentStatus;
+    const paymentProvider = row.original.paymentProvider;
+    const orderStatus = row.original.status;
 
-      // A COD order is only fully paid once it reaches the final physical delivery stage
-      const isCod = provider === "COD";
-      const isPaid = !isCod
-        ? status === "PAID" || status === "SHIPPED" || status === "DELIVERED"
-        : status === "DELIVERED";
-      const isPending = !isCod
-        ? status === "PROCESSING" || status === "PENDING"
-        : status === "PENDING" ||
-          status === "PROCESSING" ||
-          status === "SHIPPED";
+    let badgeClass = "bg-gray-100 text-gray-800";
+    let label = paymentStatus;
 
-      let badgeClass = "bg-gray-100 text-gray-800";
-      let label = isPaid ? "Paid" : isPending ? "Pending" : status;
-
-      if (isCod) {
-        if (status === "DELIVERED") {
-          badgeClass = "bg-green-100 text-green-800";
-          label = "COD Received";
-        } else if (status === "CANCELLED") {
-          badgeClass = "bg-red-100 text-red-800";
-          label = "Cancelled";
-        } else {
-          badgeClass = "bg-blue-100 text-blue-800";
-          label = "COD Pending";
-        }
-      } else if (isPending) {
-        badgeClass = "bg-amber-100 text-amber-800";
-      } else if (status === "CANCELLED" || status === "FAILED") {
-        badgeClass = "bg-red-100 text-red-800";
+    // COD-specific display
+    if (paymentProvider === "COD") {
+      if (
+        paymentStatus === "PAID" ||
+        orderStatus === "DELIVERED"
+      ) {
+        badgeClass = "bg-green-100 text-green-800";
+        label = "COD Received";
+      } else {
+        badgeClass = "bg-blue-100 text-blue-800";
+        label = "COD Pending";
       }
+    } else {
+      switch (paymentStatus) {
+        case "PAID":
+          badgeClass = "bg-green-100 text-green-800";
+          label = "Paid";
+          break;
 
-      return (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
-    {isPaid && (
-      <svg className="w-3 h-3 mr-1 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-      </svg>
-    )}
-    {isPending && !isCod && (
-      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
-    )}
-    {isPending && isCod && (
-      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" />
-    )}
-    {label}
-  </span>
-);
-    },
+        case "PENDING":
+          badgeClass = "bg-amber-100 text-amber-800";
+          label = "Pending";
+          break;
+
+        case "FAILED":
+          badgeClass = "bg-red-100 text-red-800";
+          label = "Failed";
+          break;
+
+        case "REFUNDED":
+          badgeClass = "bg-purple-100 text-purple-800";
+          label = "Refunded";
+          break;
+
+        case "PARTIALLY_REFUNDED":
+          badgeClass = "bg-purple-100 text-purple-800";
+          label = "Partially Refunded";
+          break;
+      }
+    }
+
+    return (
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}
+      >
+        {paymentStatus === "PAID" && (
+          <svg
+            className="w-3 h-3 mr-1 text-emerald-600"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+        )}
+
+        {paymentStatus === "PENDING" && (
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
+        )}
+
+        {label}
+      </span>
+    );
   },
+},
   {
     id: "fulfillmentStatus",
     header: "Fulfillment status",

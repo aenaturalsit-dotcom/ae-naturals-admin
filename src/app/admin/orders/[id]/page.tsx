@@ -1,10 +1,10 @@
-// src/app/admin/orders/[id]/page.tsx
 "use client";
 
 import { use, useState, useEffect } from "react";
 import useSWR from "swr";
 import apiClient from "@/lib/api-client";
 import CancelOrderModal from "../CancelOrderModal";
+import CancelShipmentModal from "../CancelShipmentModal";
 import {
   Package,
   XCircle,
@@ -29,7 +29,6 @@ const fetcher = async (url: string) => {
 };
 
 // 🔥 STATE MACHINE
-// FIX: Strictly using strings. Using Enums from type files in Turbopack causes 'undefined' runtime errors.
 const ORDER_TRANSITIONS: Record<string, string[]> = {
   PENDING: ["PAID", "CANCELLED"],
   PAID: ["PROCESSING", "SHIPPED", "CANCELLED"],
@@ -49,6 +48,32 @@ const ACTION_LABELS: Record<string, string> = {
   RETURNED: "Process Return",
 };
 
+// 🔥 SHIPMENT STATUS BADGE COMPONENT
+const ShipmentStatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    READY_TO_SHIP: "bg-blue-50 text-blue-700 border-blue-200",
+    PICKED_UP: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    IN_TRANSIT: "bg-purple-50 text-purple-700 border-purple-200",
+    OUT_FOR_DELIVERY: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    DELIVERED: "bg-green-50 text-green-700 border-green-200",
+    CANCELLED: "bg-red-50 text-red-700 border-red-200",
+    FAILED: "bg-red-50 text-red-700 border-red-200",
+    RTO_INITIATED: "bg-orange-50 text-orange-700 border-orange-200",
+    RTO_DELIVERED: "bg-orange-50 text-orange-700 border-orange-200",
+  };
+
+  return (
+    <span
+      className={`px-3 py-1 text-xs uppercase tracking-wider font-bold rounded-md border ${
+        colors[status] || "bg-gray-50 text-gray-700 border-gray-200"
+      }`}
+    >
+      {status}
+    </span>
+  );
+};
+
 export default function AdminOrderDetailsPage({
   params,
 }: {
@@ -59,6 +84,7 @@ export default function AdminOrderDetailsPage({
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isShipmentCancelModalOpen, setIsShipmentCancelModalOpen] = useState(false);
 
   const {
     data: order,
@@ -106,14 +132,10 @@ export default function AdminOrderDetailsPage({
     );
   }
 
-  // --- SAFE FALLBACKS (Prevents .length crashes) ---
-  // Guarantees it is always a valid string, even if the API sends null
+  // --- SAFE FALLBACKS ---
   const currentStatus = order?.status ? String(order.status) : "PENDING";
-
-  // Safely grab the array, fallback to empty array if the status string is unrecognized
   const rawActions = ORDER_TRANSITIONS[currentStatus];
   const availableActions = Array.isArray(rawActions) ? rawActions : [];
-
   const hasAddress = order.addressSnapshot && order.addressSnapshot.name;
 
   // --- ACTION HANDLER ---
@@ -250,7 +272,7 @@ export default function AdminOrderDetailsPage({
             )}
           </div>
 
-          {/* RIGHT COLUMN: ITEMS & FINANCIALS */}
+          {/* RIGHT COLUMN: ITEMS & FINANCIALS & SHIPMENT */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-4 border-b border-gray-100 bg-gray-50">
@@ -259,46 +281,49 @@ export default function AdminOrderDetailsPage({
               <div className="divide-y divide-gray-100">
                 {order.items && Array.isArray(order.items) ? (
                   order.items.map((item: any) => {
-                    const itemImageUrl = resolveFirstProductImage(item?.product?.images);
-                    
+                    const itemImageUrl = resolveFirstProductImage(
+                      item?.product?.images
+                    );
+
                     return (
-                    <div
-                      key={item.id}
-                      className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="h-16 w-16 bg-white rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
-                        {itemImageUrl ? (
-                          <img
-                            src={itemImageUrl}
-                            alt={item.product?.name || "product"}
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <Package className="text-gray-300" />
-                        )}
+                      <div
+                        key={item.id}
+                        className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="h-16 w-16 bg-white rounded-lg border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-1">
+                          {itemImageUrl ? (
+                            <img
+                              src={itemImageUrl}
+                              alt={item.product?.name || "product"}
+                              className="h-full w-full object-contain"
+                            />
+                          ) : (
+                            <Package className="text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">
+                            {item?.product?.name || "Product Unavailable"}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            Unit Price: ₹
+                            {item?.price?.toLocaleString("en-IN") || 0}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">
+                            ₹
+                            {(
+                              (item?.price || 0) * (item?.quantity || 1)
+                            ).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
+                            Qty: {item?.quantity || 1}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">
-                          {item?.product?.name || "Product Unavailable"}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          Unit Price: ₹
-                          {item?.price?.toLocaleString("en-IN") || 0}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">
-                          ₹
-                          {(
-                            (item?.price || 0) * (item?.quantity || 1)
-                          ).toLocaleString("en-IN")}
-                        </p>
-                        <p className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
-                          Qty: {item?.quantity || 1}
-                        </p>
-                      </div>
-                    </div>);
-})
+                    );
+                  })
                 ) : (
                   <div className="p-4 text-center text-gray-500">
                     No items found in this order.
@@ -337,11 +362,87 @@ export default function AdminOrderDetailsPage({
                 </div>
               </div>
             </div>
+
+            {/* 🔥 SHIPMENT DETAILS CARD */}
+            {order.shipment && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Shipment Details
+                  </h3>
+
+                  <ShipmentStatusBadge status={order.shipment.status} />
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>Provider:</strong> {order.shipment.provider}
+                  </p>
+
+                  <p>
+                    <strong>AWB Code:</strong> {order.shipment.awbCode || "-"}
+                  </p>
+
+                  <p>
+                    <strong>Courier:</strong> {order.shipment.courierName || "-"}
+                  </p>
+
+                  {order.shipment.trackingUrl && (
+                    <p>
+                      <strong>Tracking:</strong>{" "}
+                      <a
+                        href={order.shipment.trackingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        Open Tracking
+                      </a>
+                    </p>
+                  )}
+                </div>
+
+                {![
+                  "PICKED_UP",
+                  "IN_TRANSIT",
+                  "OUT_FOR_DELIVERY",
+                  "DELIVERED",
+                  "CANCELLED",
+                ].includes(order.shipment.status) && (
+                  <button
+                    onClick={() => setIsShipmentCancelModalOpen(true)}
+                    className="mt-6 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Cancel Shipment
+                  </button>
+                )}
+
+                {order.shipment.status === "CANCELLED" && (
+                  <div className="mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-sm">
+                    <p>
+                      <strong>Cancelled By:</strong>{" "}
+                      {order.shipment.cancelledBy || "-"}
+                    </p>
+
+                    <p>
+                      <strong>Reason:</strong>{" "}
+                      {order.shipment.cancellationReason || "-"}
+                    </p>
+
+                    <p>
+                      <strong>Cancelled At:</strong>{" "}
+                      {order.shipment.cancelledAt
+                        ? new Date(order.shipment.cancelledAt).toLocaleString()
+                        : "-"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 🔥 FIX: Passed currentStatus (safely defaulted to PENDING) instead of order.status */}
       <AdminTrackingLogs orderId={order.id} currentStatus={currentStatus} />
 
       {/* 🔥 The Cancel Modal */}
@@ -352,6 +453,17 @@ export default function AdminOrderDetailsPage({
         orderStatus={currentStatus}
         onSuccess={() => mutate()}
       />
+
+      {/* 🔥 The Cancel Shipment Modal */}
+      {order?.shipment && (
+        <CancelShipmentModal
+          isOpen={isShipmentCancelModalOpen}
+          onClose={() => setIsShipmentCancelModalOpen(false)}
+          shipmentId={order.shipment.id}
+          shipmentStatus={order.shipment.status}
+          onSuccess={() => mutate()}
+        />
+      )}
     </>
   );
 }

@@ -15,6 +15,7 @@ import { getProductColumns } from "./columns";
 import { ConfirmDeleteModal } from "@/components/admin/ConfirmDeleteModal";
 import { ProductImportModal } from "@/components/admin/products/ProductImportModal";
 import { Badge } from "@/components/admin/ui/Badge";
+import { BRAND } from "@/config/brand.config";
 
 const STATUS_OPTIONS = [
   { label: "Published", value: "ACTIVE" },
@@ -112,7 +113,8 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300 bg-[#f4f4f5] min-h-screen">
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300  min-h-screen"
+    style={{ backgroundColor: BRAND.theme.accent }}>
       
       {/* Header - Optimized for Mobile Grid */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">

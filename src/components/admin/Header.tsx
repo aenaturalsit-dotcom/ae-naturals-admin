@@ -6,11 +6,13 @@
 
 'use client';
 
+import { BRAND } from '@/config/brand.config';
 import { Menu, Bell, Search } from 'lucide-react';
 
 export const Header = ({ onMenuClick }: { onMenuClick: () => void }) => {
   return (
-    <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-gray-200 bg-white sticky top-0 z-30">
+    <header className="h-14 flex items-center justify-between px-4 lg:px-6 border-b border-gray-200  sticky top-0 z-30"
+    style={{ backgroundColor: BRAND.theme.accent }}>
 
       {/* Left */}
       <div className="flex items-center gap-3">

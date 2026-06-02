@@ -8,6 +8,7 @@ import { orderColumns } from "./columns";
 import { AdminOrdersService } from "@/services/admin-orders.service";
 import { Search, Filter, ArrowUpDown } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { BRAND } from "@/config/brand.config";
 
 // 🟢 REPLACE WITH THIS:
 const TABS = [
@@ -112,7 +113,8 @@ export default function AdminOrdersPage() {
   }, []);
 
   return (
-    <div className="p-6 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300 bg-[#f4f4f5] min-h-screen">
+    <div className="p-6 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300  min-h-screen"
+    style={{ backgroundColor: BRAND.theme.accent }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Orders</h1>

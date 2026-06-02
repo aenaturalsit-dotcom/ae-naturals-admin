@@ -8,6 +8,7 @@ import AuthProvider from "@/components/admin/providers/AuthProvider";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import { Metadata } from "next";
+import { BRAND } from "@/config/brand.config";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 export const metadata: Metadata = {
@@ -33,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className="antialiased bg-gray-100">
+      <body className="antialiased "  style={{ backgroundColor: BRAND.theme.accent }}>
         <Toaster position="top-right" />
         <AuthProvider session={session}>
           {children}

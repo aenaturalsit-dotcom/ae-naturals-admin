@@ -1,7 +1,7 @@
 // src\config\brand.config.ts
 
 export const BRAND = {
-  name: "AE Naturals",
+  name: "AE-Naturals",
   useStoreName: "ae-naturals",
   logo: "https://res.cloudinary.com/djunjtr5l/image/upload/f_auto,q_auto/v1778848925/logo_rogjqa.png", // <-- Add your logo here (emoji or image path)
 
