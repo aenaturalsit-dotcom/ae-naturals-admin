@@ -13,20 +13,11 @@ interface Props {
   onRemove: () => void;
 }
 
-export default function SortableMediaItem({
-  media,
-  index,
-  onRemove,
-}: Props) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
-    id: media.publicId || media.url,
-  });
+export default function SortableMediaItem({ media, index, onRemove }: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: media.publicId || media.url,
+    });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -63,21 +54,13 @@ export default function SortableMediaItem({
 
       {media.type === "video" ? (
         <div className="h-full w-full bg-zinc-900">
-          <video
-            src={media.url}
-            className="h-full w-full object-cover"
-            muted
-          />
+          <video src={media.url} className="h-full w-full object-cover" muted />
           <div className="absolute top-10 left-2 bg-black/60 text-white p-1 rounded">
             <Film size={12} />
           </div>
         </div>
       ) : (
-        <img
-          src={media.url}
-          alt=""
-          className="h-full w-full object-cover"
-        />
+        <img src={media.url} alt="" className="h-full w-full object-cover" />
       )}
 
       <button
