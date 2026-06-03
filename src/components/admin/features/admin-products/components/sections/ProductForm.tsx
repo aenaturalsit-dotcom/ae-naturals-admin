@@ -15,6 +15,7 @@ import { ProductExtraDetails } from "./ProductExtraDetails";
 import { ProductFormValues } from "../../schemas/product.schema";
 import { MediaItem } from "@/types/media";
 import { normalizeMediaCollection } from "@/shared/utils/media-normalization";
+import ProductMediaGallery from "../media/ProductMediaGallery";
 
 interface ProductFormProps {
   initialData?: any;
@@ -125,95 +126,13 @@ export function ProductForm({ initialData, categories, stores }: ProductFormProp
                   <label className="text-xs font-black text-zinc-400 uppercase tracking-widest">Media Gallery (Min 1) *</label>
                 </div>
                 
-                <div className="flex gap-4 flex-wrap">
-                  {normalizedMedia.map((media, i) => (
-                    <div key={i} className="relative h-32 w-32 rounded-3xl overflow-hidden border border-zinc-200 shadow-sm group bg-white">
-                      
-                      {/* Render Video Preview */}
-                      {media.type === "video" ? (
-                        <div className="h-full w-full relative bg-zinc-900 flex items-center justify-center">
-                          <video 
-                            src={media.url} 
-                            className="h-full w-full object-cover" 
-                            muted 
-                            playsInline
-                            loop
-                            onMouseEnter={(e) => e.currentTarget.play()}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.pause();
-                              e.currentTarget.currentTime = 0;
-                            }}
-                          />
-                          <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white p-1 rounded-md">
-                            <Film size={12} />
-                          </div>
-                        </div>
-                      ) : (
-                        /* Render Image/GIF Preview */
-                        <div className="h-full w-full relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={media.url} 
-                            className="h-full w-full object-cover transition-transform group-hover:scale-110" 
-                            alt={`upload-${i}`} 
-                          />
-                          {media.type === "gif" && (
-                            <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                              GIF
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Remove Button */}
-                      <button 
-                        type="button" 
-                        onClick={() => setImages((images || []).filter((_, idx) => idx !== i))} 
-                        className="absolute top-2 right-2 bg-white/90 rounded-full p-1.5 shadow-md hover:text-red-500 transition-colors z-10"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {/* Cloudinary Multi-Media Uploader */}
-                  <CldUploadWidget 
-                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET} 
-                    options={{ 
-                      multiple: true,
-                      resourceType: "auto",
-                      clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "mp4", "mov", "webm"]
-                    }} 
-                    onSuccess={(result: any) => { 
-                      if (result.event === "success" && result.info?.secure_url) { 
-                        let inferredType: "image" | "video" | "gif" = "image";
-                        if (result.info.resource_type === "video") inferredType = "video";
-                        if (result.info.format === "gif") inferredType = "gif";
-
-                        const newMediaObject: MediaItem = {
-                          url: result.info.secure_url,
-                          publicId: result.info.public_id || null,
-                          type: inferredType,
-                          posterUrl: result.info.thumbnail_url || null
-                        };
-
-                        latestImagesTracker.current = [...latestImagesTracker.current, newMediaObject];
-                        setImages([...latestImagesTracker.current]); 
-                      } 
-                    }}
-                  >
-                    {({ open }) => (
-                      <button 
-                        type="button" 
-                        onClick={() => open()} 
-                        className="h-32 w-32 border-2 border-dashed border-zinc-300 rounded-3xl flex flex-col items-center justify-center text-zinc-400 hover:border-[#006044] hover:bg-white transition-all bg-transparent"
-                      >
-                        <Upload size={28} />
-                        <span className="text-[10px] font-black mt-2 tracking-widest uppercase">Add Media</span>
-                      </button>
-                    )}
-                  </CldUploadWidget>
-                </div>
+                <ProductMediaGallery
+  media={normalizedMedia}
+  onChange={(updatedMedia) => {
+    latestImagesTracker.current = updatedMedia;
+    setImages(updatedMedia);
+  }}
+/>
               </div>
 
               {/* SERVICE HIGHLIGHTS */}

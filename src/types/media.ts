@@ -7,4 +7,5 @@ export interface MediaItem {
   publicId?: string | null;
   type: MediaType;
   posterUrl?: string | null;
+  sortOrder?: number;
 }

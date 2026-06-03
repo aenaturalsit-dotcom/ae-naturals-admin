@@ -20,40 +20,60 @@ export const useProductForm = (initialData?: any): UseProductFormReturn => {
   const isEditing = !!initialData?.id; // Check safely using id presence
 
   const mapDataToForm = (data: any): ProductFormValues => {
-    // 🔥 FIXED: Parses either direct objects, flat string URLs, or double-serialized JSON strings securely
-    const parsedMedia = Array.isArray(data?.images)
-      ? data.images.map((img: any): MediaItem => {
-          if (!img) return { url: "", type: "image" };
-          
-          let target = img;
-          
-          if (typeof img === "string") {
-            try {
-              if (img.trim().startsWith("{")) {
-                target = JSON.parse(img);
-              } else {
-                // Fallback for flat URL strings
-                const isVideo = img.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
-                const isGif = img.match(/\.gif(\?.*)?$/i);
-                return {
-                  url: img,
-                  publicId: img.split("/").pop()?.split(".")[0] || null,
-                  type: isVideo ? "video" : isGif ? "gif" : "image",
-                };
-              }
-            } catch {
-              return { url: img, publicId: null, type: "image" };
-            }
-          }
+   const parsedMedia: MediaItem[] = Array.isArray(data?.images)
+  ? data.images
+      .map((img: any, index: number): MediaItem | null => {
+        if (!img) return null;
 
-          return {
-            url: target.url || "",
-            publicId: target.publicId || null,
-            type: target.type === "video" || target.type === "gif" ? target.type : "image",
-            posterUrl: target.posterUrl || null
-          };
-        }).filter((m: MediaItem) => Boolean(m.url))
-      : [];
+        let target = img;
+
+        if (typeof img === "string") {
+          try {
+            if (img.trim().startsWith("{")) {
+              target = JSON.parse(img);
+            } else {
+              const isVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(img);
+              const isGif = /\.gif(\?.*)?$/i.test(img);
+
+              return {
+                url: img,
+                publicId: img.split("/").pop()?.split(".")[0] || null,
+                type: isVideo ? "video" : isGif ? "gif" : "image",
+                posterUrl: null,
+                sortOrder: index,
+              };
+            }
+          } catch {
+            return {
+              url: img,
+              publicId: null,
+              type: "image",
+              posterUrl: null,
+              sortOrder: index,
+            };
+          }
+        }
+
+        return {
+          url: target.url || "",
+          publicId: target.publicId || null,
+          type:
+            target.type === "video" || target.type === "gif"
+              ? target.type
+              : "image",
+          posterUrl: target.posterUrl || null,
+          sortOrder:
+            typeof target.sortOrder === "number"
+              ? target.sortOrder
+              : index,
+        };
+      })
+      .filter(
+        (m :any): m is MediaItem =>
+          Boolean(m?.url)
+      )
+      .sort((a: MediaItem, b: MediaItem) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  : [];
 
     return {
       name: data?.name || "",
