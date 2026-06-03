@@ -340,6 +340,68 @@ export function SectionConfigPanel() {
           </div>
         )}
 
+        {activeSection.type === "WHATSAPP_WIDGET" && (
+          <div className="space-y-5 pt-4 border-t border-zinc-100">
+            <div>
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Enable Widget
+              </label>
+
+              <select
+                className="w-full mt-2 p-4 border border-zinc-200 rounded-2xl"
+                value={
+                  activeSection.settings.enabled === false ? "false" : "true"
+                }
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    enabled: e.target.value === "true",
+                  })
+                }
+              >
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                WhatsApp Number
+              </label>
+
+              <input
+                type="text"
+                maxLength={10}
+                placeholder="9242137092"
+                className="w-full mt-2 p-4 border border-zinc-200 rounded-2xl"
+                value={(activeSection.settings.phoneNumber as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    phoneNumber: e.target.value.replace(/\D/g, ""),
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Default Message
+              </label>
+
+              <textarea
+                rows={4}
+                placeholder="Hi 👋 I would like to know more about your products and pricing."
+                className="w-full mt-2 p-4 border border-zinc-200 rounded-2xl"
+                value={(activeSection.settings.defaultMessage as string) || ""}
+                onChange={(e) =>
+                  updateSectionSettings(activeSection.id, {
+                    defaultMessage: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+
         {/* ================================================== */}
         {/* HERO CONFIGURATION                                 */}
         {/* ================================================== */}

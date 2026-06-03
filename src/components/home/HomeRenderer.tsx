@@ -12,6 +12,7 @@ import { FeaturedProducts } from "./FeaturedProducts";
 import { HomeBlogSection } from "./HomeBlogSection";
 import { CollectionsShowcase } from "./CollectionsShowcase";
 import { VideoShoppableSection } from "./VideoShoppableSection";
+import WhatsappWidget from "./WhatsappWidget";
 
 // 1. REGISTRY: Maps Admin block types to your actual React components
 const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
@@ -24,6 +25,7 @@ const SECTION_COMPONENTS: Record<string, React.FC<any>> = {
   BRAND_STORY: BrandStory,
   BLOG_SECTION: HomeBlogSection,
   VIDEO_SHOPPABLE: VideoShoppableSection,
+  WHATSAPP_WIDGET: WhatsappWidget,
 };
 
 interface HomeRendererProps {
@@ -47,12 +49,19 @@ export default function HomeRenderer({
 
           const resolvedData = resolveData(section, data);
 
+          if (section.type === "WHATSAPP_WIDGET") {
+            return (
+              <Component
+                key={section.id}
+                data={resolvedData}
+                settings={section.settings || {}}
+                previewMode={previewMode}
+              />
+            );
+          }
+
           return (
-            <section
-              key={section.id}
-              id={section.id}
-              className="w-full"
-            >
+            <section key={section.id} id={section.id} className="w-full">
               <Component
                 data={resolvedData}
                 settings={section.settings || {}}
@@ -71,30 +80,32 @@ function resolveData(section: any, data: any) {
   const sourceKey = settings.dataSource;
 
   switch (section.type) {
-    case 'FEATURED_PRODUCTS':
+    case "FEATURED_PRODUCTS":
       return data?.featuredProducts || [];
 
-    case 'PRODUCT_CAROUSEL':
-  if (sourceKey?.startsWith('collection_')) {
-    const selector = sourceKey.replace('collection_', '');
-    
-    // Fallback search checking both slug AND stringified ID match configurations
-    const target = data?.collections?.find((c: any) => 
-      String(c.slug) === String(selector) || String(c.id) === String(selector)
-    );
-    
-    if (target) {
-      const rawProducts = target.products || [];
-      return rawProducts.map((p: any) => p.product || p);
-    }
-    return [];
-  }
-  return data?.[sourceKey] || [];
-      
-    case 'COLLECTIONS':
+    case "PRODUCT_CAROUSEL":
+      if (sourceKey?.startsWith("collection_")) {
+        const selector = sourceKey.replace("collection_", "");
+
+        // Fallback search checking both slug AND stringified ID match configurations
+        const target = data?.collections?.find(
+          (c: any) =>
+            String(c.slug) === String(selector) ||
+            String(c.id) === String(selector),
+        );
+
+        if (target) {
+          const rawProducts = target.products || [];
+          return rawProducts.map((p: any) => p.product || p);
+        }
+        return [];
+      }
+      return data?.[sourceKey] || [];
+
+    case "COLLECTIONS":
       if (settings?.collectionId && data?.collections) {
         const selectedCollection = data.collections.find(
-          (c: any) => String(c.id) === String(settings.collectionId)
+          (c: any) => String(c.id) === String(settings.collectionId),
         );
         if (selectedCollection) {
           return [selectedCollection];
@@ -102,19 +113,19 @@ function resolveData(section: any, data: any) {
       }
       return data?.collections || [];
 
-    case 'BLOG_SECTION':
+    case "BLOG_SECTION":
       return data?.blogs || [];
 
-    case 'HERO':
-    case 'PROMO_BANNER':
+    case "HERO":
+    case "PROMO_BANNER":
       return data?.banners || [];
 
-    case 'VIDEO_SHOPPABLE':
+    case "VIDEO_SHOPPABLE":
       // Pass existing slide setups from settings down if data isn't separated on root data level
       return settings?.slides || data?.videoReels || [];
 
-    case 'TRUST_BADGES':
-    case 'BRAND_STORY':
+    case "TRUST_BADGES":
+    case "BRAND_STORY":
       // These elements rely strictly on configured block settings context fields rather than datasets
       return data || [];
 

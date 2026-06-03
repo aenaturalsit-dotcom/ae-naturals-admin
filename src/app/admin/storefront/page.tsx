@@ -37,6 +37,7 @@ const AVAILABLE_SECTIONS = [
   { type: "BRAND_STORY", label: "Brand Story" },
   { type: "BLOG_SECTION", label: "Journal / Blog" },
   { type: "VIDEO_SHOPPABLE", label: "Video + Products" },
+  { type: "WHATSAPP_WIDGET", label: "WhatsApp Chat" },
 ];
 
 export default function StorefrontBuilderPage() {
@@ -113,13 +114,13 @@ export default function StorefrontBuilderPage() {
 
   if (isLoading)
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex  items-center justify-center">
         <Loader2 className="animate-spin text-[#006044] w-8 h-8" />
       </div>
     );
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
+    <div className="flex flex-col  overflow-hidden bg-gray-100">
       {/* Header */}
       <header className="flex-shrink-0 h-16 bg-white border-b px-6 flex items-center justify-between z-10 shadow-sm">
         <h1 className="text-xl font-black flex items-center gap-2 tracking-tight text-gray-900">
@@ -140,35 +141,65 @@ export default function StorefrontBuilderPage() {
       </header>
 
       {/* 3-Pane Canvas */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* PANE 1: Blocks & Active Sequence */}
-        <div className="w-80 bg-white border-r flex flex-col h-full z-10 overflow-y-auto p-5 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-          <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Add Block
-          </h2>
-          <div className="grid grid-cols-2 gap-2 mb-8">
-            {AVAILABLE_SECTIONS.map((block) => (
-              <button
-                key={block.type}
-                onClick={() => store.addSection(block.type as any)}
-                className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:border-[#006044] hover:bg-[#006044]/5 hover:shadow-sm text-xs font-bold text-gray-700 transition-all text-center h-full"
-              >
-                <Plus size={16} className="mb-1.5 text-gray-400" />{" "}
-                {block.label}
-              </button>
-            ))}
+      {/* Builder Canvas */}
+      <div className="flex-1 flex flex-col overflow-hidden p-6 gap-6">
+        {/* TOP PREVIEW */}
+        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+          <div className="h-[420px] overflow-y-auto">
+            <HomeRenderer
+              key={JSON.stringify(
+                store.sections.map((s) => ({
+                  id: s.id,
+                  settings: s.settings,
+                })),
+              )}
+              config={{ sectionsOrder: store.sections }}
+              data={{
+                ...(homeData as any)?.data,
+                collections:
+                  (homeData as any)?.collections ||
+                  (homeData as any)?.data?.collections ||
+                  [],
+              }}
+              previewMode={true}
+            />
           </div>
+        </div>
 
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-              Active Sequence
+        {/* BOTTOM SECTION */}
+        <div className="grid grid-cols-[320px_420px_1fr] gap-6 flex-1 min-h-0">
+          {/* COLUMN 1 - ADD BLOCKS */}
+          <div className="bg-white border rounded-xl p-5 overflow-y-auto">
+            <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+              Add Block
             </h2>
-            <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              {store.sections.length}
-            </span>
+
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABLE_SECTIONS.map((block) => (
+                <button
+                  key={block.type}
+                  onClick={() => store.addSection(block.type as any)}
+                  className="flex flex-col items-center justify-center p-3 border border-gray-100 rounded-xl hover:border-[#006044] hover:bg-[#006044]/5 text-xs font-bold text-gray-700 h-24"
+                >
+                  <Plus size={16} className="mb-2 text-gray-400" />
+                  {block.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="pb-20">
+          {/* COLUMN 2 - ACTIVE SEQUENCE */}
+          <div className="bg-white border rounded-xl p-5 overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                Active Sequence
+              </h2>
+
+              <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                {store.sections.length}
+              </span>
+            </div>
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -183,42 +214,12 @@ export default function StorefrontBuilderPage() {
                 ))}
               </SortableContext>
             </DndContext>
-            {store.sections.length === 0 && (
-              <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 text-gray-400 text-sm font-medium mt-2">
-                No sections added yet. <br /> Click above to add blocks.
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* PANE 2: Live Preview */}
-        <div className="flex-1 bg-gray-100 p-4 md:p-8 flex justify-center overflow-hidden">
-          <div className="w-full max-w-[480px] lg:max-w-[768px] xl:max-w-[1200px] bg-white rounded-b-3xl shadow-2xl h-full flex flex-col border border-gray-200 overflow-hidden ring-1 ring-gray-900/5">
-            <div className="h-8 bg-gray-100 border-b flex items-center px-4 gap-1.5 flex-shrink-0">
-              <div className="w-3 h-3 rounded-full bg-red-400 shadow-sm border border-red-500/20"></div>
-              <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm border border-amber-500/20"></div>
-              <div className="w-3 h-3 rounded-full bg-green-400 shadow-sm border border-green-500/20"></div>
-            </div>
-
-            {/* SCROLLABLE CONTENT AREA */}
-{/* SCROLLABLE CONTENT AREA */}
-<div className="flex-1 overflow-y-auto custom-scrollbar">
-  <HomeRenderer
-    key={JSON.stringify(store.sections.map(s => ({ id: s.id, settings: s.settings })))}
-    config={{ sectionsOrder: store.sections }}
-    data={{
-      ...(homeData as any)?.data,
-      collections: (homeData as any)?.collections || (homeData as any)?.data?.collections || [],
-    }}
-    previewMode={true}
-  />
-</div>
+          {/* COLUMN 3 - CONFIG */}
+          <div className="bg-white border rounded-xl overflow-y-auto">
+            <SectionConfigPanel />
           </div>
-        </div>
-
-        {/* PANE 3: Config */}
-        <div className="w-[340px] bg-white border-l h-full z-10 overflow-y-auto shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
-          <SectionConfigPanel />
         </div>
       </div>
     </div>
