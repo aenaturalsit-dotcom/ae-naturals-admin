@@ -14,6 +14,7 @@ export const ThemeSectionSchema = z.object({
     "BRAND_STORY",
     "BLOG_SECTION",
     "VIDEO_SHOPPABLE",   // 🚨 Added
+    "WHATSAPP_WIDGET"
   ]),
   isActive: z.boolean().default(true),
   settings: z.record(z.string(), z.any()).default({}), // Can be strictly typed per block later

@@ -35,17 +35,34 @@ export const useStorefrontStore = create<StorefrontState>((set) => ({
   
   setActiveSectionId: (id) => set({ activeSectionId: id }),
 
-  addSection: (type) => set((state) => {
+  addSection: (type) =>
+  set((state) => {
+    let defaultSettings = {};
+
+    switch (type) {
+      case "WHATSAPP_WIDGET":
+        defaultSettings = {
+          enabled: true,
+          phoneNumber: "",
+          defaultMessage: "Hi 👋 I would like to know more about your products and pricing.",
+        };
+        break;
+
+      default:
+        defaultSettings = {};
+    }
+
     const newSection: ThemeSection = {
       id: `sec-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       type,
       isActive: true,
-      settings: {},
+      settings: defaultSettings,
     };
-    return { 
+
+    return {
       sections: [...state.sections, newSection],
       activeSectionId: newSection.id,
-      isDirty: true 
+      isDirty: true,
     };
   }),
 
