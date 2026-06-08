@@ -32,13 +32,13 @@ export default function SortableMediaItem({ media, index, onRemove }: Props) {
     >
       {/* Cover Badge */}
       {index === 0 && (
-        <div className="absolute left-2 bottom-2 z-20 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded-full">
+        <div className="absolute left-2 bottom-2  bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded-full">
           COVER
         </div>
       )}
 
       {/* Order Badge */}
-      <div className="absolute left-2 top-2 z-20 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full">
+      <div className="absolute left-2 top-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full">
         {index + 1}
       </div>
 
@@ -47,7 +47,7 @@ export default function SortableMediaItem({ media, index, onRemove }: Props) {
         type="button"
         {...attributes}
         {...listeners}
-        className="absolute bottom-2 right-2 z-20 bg-white/90 p-1.5 rounded-full shadow"
+        className="absolute bottom-2 right-2 bg-white/90 p-1.5 rounded-full shadow"
       >
         <GripVertical size={14} />
       </button>
@@ -66,7 +66,7 @@ export default function SortableMediaItem({ media, index, onRemove }: Props) {
       <button
         type="button"
         onClick={onRemove}
-        className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow z-20"
+        className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow "
       >
         <X size={14} />
       </button>

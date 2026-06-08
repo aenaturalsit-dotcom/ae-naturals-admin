@@ -4,17 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, Loader2, Plus } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useProductSearch } from "@/hooks/useProductSearch";
+import { resolveFirstProductImage } from "@/shared/utils/media-normalization";
 
-const isValidImageUrl = (url?: string) => {
-  if (!url || typeof url !== "string") return false;
-  if (url.startsWith("/")) return true;
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
+
 
 interface AdminProductSearchModalProps {
   isOpen: boolean;
@@ -111,19 +103,8 @@ export function AdminProductSearchModal({ isOpen, onClose, onSelect }: AdminProd
             <div className={`py-2 transition-opacity duration-200 ${isFetching ? "opacity-50" : "opacity-100"}`}>
               {results.map((product: any) => {
                 
-                // Extract Image correctly for strings or objects
-                let finalImageUrl = "/placeholder.png";
-                if (product.imageUrl) {
-                   finalImageUrl = product.imageUrl;
-                } else if (Array.isArray(product.images) && product.images.length > 0) {
-                   finalImageUrl = typeof product.images[0] === 'string' 
-                     ? product.images[0] 
-                     : product.images[0]?.url || "/placeholder.png";
-                }
-
-                // Ensure it's a valid URL string before rendering
-                const safeImageSrc = isValidImageUrl(finalImageUrl) ? finalImageUrl : "/placeholder.png";
-
+              const resolvedSearchImage = resolveFirstProductImage(product.images);
+                
                 return (
                   <div
                     key={product.id}
@@ -133,7 +114,7 @@ export function AdminProductSearchModal({ isOpen, onClose, onSelect }: AdminProd
                         name: product.name,
                         price: product.price,
                         slug: product.slug,
-                        image: safeImageSrc
+                        image: resolvedSearchImage
                       });
                       setInputValue("");
                       onClose();
@@ -143,7 +124,7 @@ export function AdminProductSearchModal({ isOpen, onClose, onSelect }: AdminProd
                     {/* 🚨 FIX 2: Used standard <img> tag to bypass Next.js hostname blocking */}
                     <div className="w-12 h-12 bg-white rounded-lg relative overflow-hidden shrink-0 border border-zinc-200">
                       <img
-                        src={safeImageSrc}
+                        src={resolvedSearchImage || "/placeholder.png"}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
