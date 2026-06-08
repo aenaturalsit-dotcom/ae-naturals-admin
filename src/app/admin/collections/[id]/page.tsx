@@ -158,7 +158,7 @@ export default function EditCollectionPage({
         products: collectionProducts.map((p, index) => ({
           productId: p.id,
           order: index,
-         })),
+        })),
       };
 
       await apiClient.post(
@@ -320,9 +320,24 @@ export default function EditCollectionPage({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                  Banner Image
-                </label>
+                <div className="mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
+                    Banner Image
+                  </label>
+                  {/* 🚨 FIX: High-contrast guidelines styled for light backgrounds */}
+                  <p className="text-[11px] font-medium leading-relaxed text-gray-500">
+                    Recommended resolution:{" "}
+                    <span className="font-bold text-gray-800">
+                      2048 × 1024 px
+                    </span>{" "}
+                    (2:1 aspect ratio). Keep primary subjects on the{" "}
+                    <span className="underline decoration-gray-300 underline-offset-2 text-gray-800 font-semibold">
+                      right side
+                    </span>
+                    . Do not upload images with pre-rendered text, as titles
+                    overlay dynamically on the left.
+                  </p>
+                </div>
                 {formData.image ? (
                   <div className="relative w-full h-40 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-inner group">
                     <Image
@@ -351,7 +366,11 @@ export default function EditCollectionPage({
                     }
                     onSuccess={(result: any) => {
                       const url = result?.info?.secure_url;
-                      if (url) setFormData({ ...formData, image: url });
+                      if (url)
+                        setFormData((prev) => ({
+                          ...prev,
+                          image: url,
+                        }));
                     }}
                     options={{
                       maxFiles: 1,
@@ -439,8 +458,10 @@ export default function EditCollectionPage({
                   ) : (
                     searchResults.map((p: any) => {
                       // 🔥 RESOLVE: First image from full catalog search list
-                      const resolvedSearchImage = resolveFirstProductImage(p.images);
-                      
+                      const resolvedSearchImage = resolveFirstProductImage(
+                        p.images,
+                      );
+
                       return (
                         <div
                           key={p.id}
@@ -488,7 +509,9 @@ export default function EditCollectionPage({
               ) : (
                 collectionProducts.map((product, index) => {
                   // 🔥 RESOLVE: First image from active draggable item stack
-                  const resolvedRowImage = resolveFirstProductImage(product.images);
+                  const resolvedRowImage = resolveFirstProductImage(
+                    product.images,
+                  );
 
                   return (
                     <div
