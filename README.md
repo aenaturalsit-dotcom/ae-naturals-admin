@@ -1,4 +1,4 @@
-# 🌸 AE Naturals - Multi-Tenant E-Commerce Ecosystem
+# 🌸 AE Connect - Multi-Tenant E-Commerce Ecosystem
 
 AE Naturals is a production-grade, high-performance e-commerce platform. It consists of a highly optimized **Next.js Storefront**, a powerful **NestJS Core API**, and a comprehensive **Next.js Admin Dashboard**. Designed for scalability, it supports multi-tenant architecture, complex product enrichment (A+ Content), secure passwordless authentication, and a dynamic 3rd-party provider registry.
 
