@@ -87,7 +87,7 @@ export default function StorefrontBuilderPage() {
         sectionsCount: store.sections.length,
       });
 
-      return adminService.updateThemeConfig(storeId, {
+      return adminService.updateThemeConfig({
         sectionsOrder: store.sections,
       });
     },

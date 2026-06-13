@@ -25,8 +25,8 @@ export const adminService = {
   getStores: () => apiClient.get('/admin/stores'), // Used to get the Store ID
   // 🔥 FIX: Added explicit headers to prevent the browser from caching the layout
   getHomepageData: () => apiClient.get('/admin/stores/home'),
-  updateThemeConfig: (storeId: string, payload: { sectionsOrder: any[] }) => 
-    apiClient.patch(`/admin/stores/${storeId}/theme`, payload),
+  updateThemeConfig: (payload: { sectionsOrder: any[] }) =>
+  apiClient.patch(`/admin/stores/theme`, payload),
 };
 
 

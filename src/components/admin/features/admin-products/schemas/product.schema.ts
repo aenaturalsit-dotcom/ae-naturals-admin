@@ -63,7 +63,17 @@ export const productFormSchema = z.object({
     safetyInfo: z.string().optional(),
     directions: z.string().optional(),
     legalDisclaimer: z.string().optional(),
-    aPlusContent: z.array(z.any()),
+    aPlusContent: z
+  .union([
+    z.array(z.any()),
+    // z.record(z.any()),
+    z.null(),
+    z.undefined(),
+  ])
+  .transform((value) => {
+    if (Array.isArray(value)) return value;
+    return [];
+  }),
   }),
 });
 
