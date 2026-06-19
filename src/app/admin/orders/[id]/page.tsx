@@ -84,7 +84,8 @@ export default function AdminOrderDetailsPage({
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isShipmentCancelModalOpen, setIsShipmentCancelModalOpen] = useState(false);
+  const [isShipmentCancelModalOpen, setIsShipmentCancelModalOpen] =
+    useState(false);
 
   const {
     data: order,
@@ -282,7 +283,7 @@ export default function AdminOrderDetailsPage({
                 {order.items && Array.isArray(order.items) ? (
                   order.items.map((item: any) => {
                     const itemImageUrl = resolveFirstProductImage(
-                      item?.product?.images
+                      item?.product?.images,
                     );
 
                     return (
@@ -384,7 +385,8 @@ export default function AdminOrderDetailsPage({
                   </p>
 
                   <p>
-                    <strong>Courier:</strong> {order.shipment.courierName || "-"}
+                    <strong>Courier:</strong>{" "}
+                    {order.shipment.courierName || "-"}
                   </p>
 
                   {order.shipment.trackingUrl && (
@@ -442,18 +444,21 @@ export default function AdminOrderDetailsPage({
           </div>
         </div>
       </div>
-
       <AdminTrackingLogs orderId={order.id} currentStatus={currentStatus} />
-
       {/* 🔥 The Cancel Modal */}
+      // ===== UPDATE THE CancelOrderModal USAGE =====
       <CancelOrderModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         orderId={order.id}
         orderStatus={currentStatus}
+        paymentProvider={order.paymentProvider}
+        paymentStatus={order.paymentStatus}
+        totalAmount={order.totalAmount}
         onSuccess={() => mutate()}
       />
 
+      
       {/* 🔥 The Cancel Shipment Modal */}
       {order?.shipment && (
         <CancelShipmentModal
