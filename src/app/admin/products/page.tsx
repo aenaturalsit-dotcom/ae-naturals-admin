@@ -154,14 +154,13 @@ export default function AdminProductsPage() {
         {/* Mobile Responsive Action Buttons */}
         <div className="grid grid-cols-2 md:flex items-center gap-2 w-full xl:w-auto">
           <button
-            onClick={handleExportCsv}
+            onClick={() => router.push("/admin/products/export")}
             className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Download size={16} /> Export
           </button>
           <button
-            onClick={() => alert("This feature is in progress")}
-            // OR if you prefer the nice toast UI: onClick={() => toast("This feature is in progress", { icon: "🚧" })}
+            onClick={() => router.push("/admin/products/import")}
             className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
           >
             <UploadCloud size={16} /> Import
