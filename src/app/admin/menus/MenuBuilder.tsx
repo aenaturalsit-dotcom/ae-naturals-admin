@@ -1,4 +1,4 @@
-// src\app\admin\menus\MenuBuilder.tsx
+// src/app/admin/menus/MenuBuilder.tsx
 
 "use client";
 
@@ -10,12 +10,13 @@ import {
   Save,
   Loader2,
   Layout,
-  Columns,
   Database,
   ExternalLink,
   Package,
   Tags,
   Monitor,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import AdminMenuPreview from "./AdminMenuPreview";
 import toast from "react-hot-toast";
@@ -49,9 +50,18 @@ export default function MenuBuilder({ slug }: { slug: string }) {
         adminMenusService.getProducts?.(),
       ]);
       const menu = menuRes?.data || menuRes;
-      setGroups(menu?.groups || []);
+      
+      // Normalize groups to ensure showHeading exists
+      const normalizedGroups = (menu?.groups || []).map((group: any) => ({
+        ...group,
+        columns: (group.columns || []).map((col: any) => ({
+          ...col,
+          showHeading: col.showHeading !== undefined ? col.showHeading : true,
+        })),
+      }));
+      
+      setGroups(normalizedGroups);
 
-      // 🔥 FIX 1: Safely extract arrays (handles { data: [...] } wrappers)
       const extractList = (res: any) => {
         if (Array.isArray(res)) return res;
         if (res?.data && Array.isArray(res.data)) return res.data;
@@ -80,15 +90,12 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           image: g.image || null,
           link: g.link || null,
           position: gIdx,
-          
-          // 🔥 1. ADD THESE TWO LINES
           type: g.type || "dropdown",
           navLink: g.type === "link" ? (g.navLink || "") : null,
-          
-          // 🔥 2. STRIP COLUMNS IF IT IS A LINK
           columns: g.type === "link" ? [] : (g.columns || []).map((c: any, cIdx: number) => ({
             title: c.title,
             position: cIdx,
+            showHeading: c.showHeading !== false,
             items: (c.items || []).map((i: any, iIdx: number) => ({
               label: i.label || "",
               slug: i.slug || "",
@@ -100,9 +107,12 @@ export default function MenuBuilder({ slug }: { slug: string }) {
         })),
       };
       
+      console.log('📤 Sending payload:', JSON.stringify(payload, null, 2));
+      
       await adminMenusService.updateMenu(slug, payload);
       toast.success("Menu published successfully", { id: toastId });
     } catch (e) {
+      console.error('❌ Save error:', e);
       toast.error("Save failed", { id: toastId });
     } finally {
       setSaving(false);
@@ -122,8 +132,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-20">
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* 🔥 FIX: Visual Preview - Removed grayscale/opacity hiding the data */}
-        <section className="bg-white rounded-3xl border border-slate-200 shadow-sm  transition-all">
+        <section className="bg-white rounded-3xl border border-slate-200 shadow-sm transition-all">
           <div className="bg-slate-50 px-6 py-3 border-b flex items-center gap-2">
             <Monitor size={14} className="text-[#006044]" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -135,7 +144,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           </div>
         </section>
 
-        {/* STICKY HEADER - Updated Z-index to not hide toast */}
         <header className="sticky top-4 z-[40]">
           <div className="backdrop-blur-xl bg-white/90 border border-slate-200 rounded-2xl shadow-xl px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -167,7 +175,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           </div>
         </header>
 
-        {/* BUILDER GRID */}
         <div className="space-y-10">
           {groups.map((group, gIdx) => (
             <div
@@ -190,7 +197,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                     placeholder="GROUP TITLE"
                   />
 
-                  {/* 🔥 TYPE SELECTOR */}
                   <select
                     value={group.type || "dropdown"}
                     onChange={(e) => {
@@ -207,7 +213,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                   </select>
                 </div>
 
-                {/* 🔥 HIDE ADD COLUMN BUTTON FOR LINKS */}
                 <div className="flex items-center gap-2">
                   {group.type !== "link" && (
                     <button
@@ -216,6 +221,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                         if (!u[gIdx].columns) u[gIdx].columns = [];
                         u[gIdx].columns.push({
                           title: "New Column",
+                          showHeading: true,
                           items: [],
                         });
                         setGroups(u);
@@ -235,7 +241,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                   </button>
                 </div>
               </div>
-              {/* 🔥 CONDITIONAL RENDERING */}
+
               {group.type === "link" ? (
                 <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block">
@@ -259,7 +265,8 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                       key={cIdx}
                       className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-5"
                     >
-                      <div className="flex items-center justify-between">
+                      {/* COLUMN HEADER WITH EYE TOGGLE */}
+                      <div className="flex items-center justify-between gap-2">
                         <input
                           value={col.title}
                           onChange={(e) => {
@@ -268,19 +275,50 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                             setGroups(u);
                           }}
                           className="font-bold text-xs uppercase tracking-widest bg-transparent w-full text-slate-400 focus:text-[#006044] outline-none"
+                          placeholder="Column Title"
                         />
-                        <button
-                          onClick={() => {
-                            const u = [...groups];
-                            u[gIdx].columns.splice(cIdx, 1);
-                            setGroups(u);
-                          }}
-                          className="text-slate-300 hover:text-rose-500"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          {/* EYE TOGGLE BUTTON */}
+                          <button
+                            onClick={() => {
+                              const u = [...groups];
+                              const currentValue = u[gIdx].columns[cIdx].showHeading;
+                              u[gIdx].columns[cIdx].showHeading = currentValue === false ? true : false;
+                              console.log('🔄 Toggled heading:', {
+                                column: u[gIdx].columns[cIdx].title,
+                                newValue: u[gIdx].columns[cIdx].showHeading
+                              });
+                              setGroups(u);
+                            }}
+                            className={`p-1.5 rounded-lg transition-all duration-200 ${
+                              col.showHeading !== false
+                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                            }`}
+                            title={col.showHeading !== false ? "Hide heading" : "Show heading"}
+                          >
+                            {col.showHeading !== false ? (
+                              <Eye size={14} />
+                            ) : (
+                              <EyeOff size={14} />
+                            )}
+                          </button>
+                          
+                          {/* DELETE COLUMN BUTTON */}
+                          <button
+                            onClick={() => {
+                              const u = [...groups];
+                              u[gIdx].columns.splice(cIdx, 1);
+                              setGroups(u);
+                            }}
+                            className="text-slate-300 hover:text-rose-500 p-1 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
 
+                      {/* COLUMN ITEMS */}
                       <div className="space-y-3">
                         {(col.items || []).map((item: any, iIdx: number) => (
                           <div
@@ -330,7 +368,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                                     const val = e.target.value;
 
                                     if (!val) {
-                                      // Allow unselecting
                                       u[gIdx].columns[cIdx].items[
                                         iIdx
                                       ].referenceId = null;
@@ -347,7 +384,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                                       ].referenceId = selected.id;
                                       u[gIdx].columns[cIdx].items[iIdx].slug =
                                         selected.slug;
-                                      // Only auto-fill if empty so we don't overwrite custom labels
                                       if (
                                         !u[gIdx].columns[cIdx].items[iIdx].label
                                       ) {
@@ -455,7 +491,6 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                                 </select>
                               )}
 
-                              {/* 🔥 FIX 2: ALWAYS show the Label and Slug so the user can see saved data */}
                               <div className="space-y-2 mt-3 pt-3 border-t border-slate-50">
                                 <input
                                   placeholder="Display Label (e.g. Shop Now)"
