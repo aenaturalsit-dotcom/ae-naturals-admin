@@ -1,3 +1,7 @@
+// src\app\admin\orders\[id]\page.tsx
+
+
+
 "use client";
 
 import { use, useState, useEffect } from "react";
@@ -13,9 +17,18 @@ import {
   User,
   Phone,
   Mail,
+  Calendar,
+  CreditCard,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Truck,
+  FileText,
 } from "lucide-react";
 import { AdminTrackingLogs } from "../AdminTrackingLogs";
 import { resolveFirstProductImage } from "@/shared/utils/media-normalization";
+import { format } from "date-fns";
 
 // 🔥 FOOLPROOF FETCHER
 const fetcher = async (url: string) => {
@@ -74,6 +87,234 @@ const ShipmentStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
+// 🔥 REFUND STATUS BADGE
+const RefundStatusBadge = ({ status }: { status: string }) => {
+  const config: Record<string, { color: string; icon: React.ReactNode }> = {
+    NOT_APPLICABLE: {
+      color: "bg-gray-50 text-gray-700 border-gray-200",
+      icon: <AlertCircle className="w-3 h-3" />,
+    },
+    PENDING: {
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: <Clock className="w-3 h-3" />,
+    },
+    APPROVED: {
+      color: "bg-blue-50 text-blue-700 border-blue-200",
+      icon: <RefreshCw className="w-3 h-3" />,
+    },
+    PROCESSED: {
+      color: "bg-green-50 text-green-700 border-green-200",
+      icon: <CheckCircle className="w-3 h-3" />,
+    },
+    REJECTED: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      icon: <XCircle className="w-3 h-3" />,
+    },
+    FAILED: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      icon: <XCircle className="w-3 h-3" />,
+    },
+  };
+
+  const { color, icon } = config[status] || config["NOT_APPLICABLE"];
+
+  return (
+    <span
+      className={`px-3 py-1 text-xs uppercase tracking-wider font-bold rounded-md border inline-flex items-center gap-1.5 ${color}`}
+    >
+      {icon}
+      {status === "NOT_APPLICABLE" ? "No Refund" : status}
+    </span>
+  );
+};
+
+// 🔥 CANCELLATION INFO CARD
+const CancellationInfoCard = ({ order }: { order: any }) => {
+  if (order.status !== "CANCELLED" && order.status !== "RETURNED") {
+    return null;
+  }
+
+  const isCancelled = order.status === "CANCELLED";
+  const isReturned = order.status === "RETURNED";
+  const hasRefund = order.refundStatus && order.refundStatus !== "NOT_APPLICABLE";
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        {isCancelled ? (
+          <XCircle className="h-5 w-5 text-red-500" />
+        ) : (
+          <RefreshCw className="h-5 w-5 text-orange-500" />
+        )}
+        {isCancelled ? "Cancellation Details" : "Return Details"}
+      </h3>
+
+      <div className="space-y-3">
+        {/* Who cancelled */}
+        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Cancelled By</span>
+          <span className="text-sm font-medium text-gray-900">
+            {order.cancelledBy || "System"}
+            {order.cancellationSource && (
+              <span className="ml-2 text-xs text-gray-500">
+                ({order.cancellationSource})
+              </span>
+            )}
+          </span>
+        </div>
+
+        {/* When cancelled */}
+        {order.cancelledAt && (
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-600">Cancelled At</span>
+            <span className="text-sm font-medium text-gray-900">
+              {format(new Date(order.cancelledAt), "MMM dd, yyyy h:mm a")}
+            </span>
+          </div>
+        )}
+
+        {/* Reason */}
+        {order.cancellationReason && (
+          <div className="py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-600 block mb-1">Reason</span>
+            <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
+              {order.cancellationReason}
+            </p>
+          </div>
+        )}
+
+        {/* Refund Status */}
+        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Refund Status</span>
+          <RefundStatusBadge status={order.refundStatus || "NOT_APPLICABLE"} />
+        </div>
+
+        {/* Refund Amount */}
+        {hasRefund && order.refundAmount && (
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-600">Refund Amount</span>
+            <span className="text-sm font-bold text-green-600">
+              ₹{order.refundAmount.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {/* Refund Processed At */}
+        {order.refundProcessedAt && (
+          <div className="flex justify-between items-center py-2">
+            <span className="text-sm text-gray-600">Refund Processed At</span>
+            <span className="text-sm font-medium text-gray-900">
+              {format(new Date(order.refundProcessedAt), "MMM dd, yyyy h:mm a")}
+            </span>
+          </div>
+        )}
+
+        {/* Cancellation Log (if any) */}
+        {order.orderCancellationLogs && order.orderCancellationLogs.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                // Show cancellation logs in a modal or expandable section
+                console.log("Cancellation Logs:", order.orderCancellationLogs);
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              <FileText className="w-4 h-4" />
+              View Audit Log ({order.orderCancellationLogs.length})
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 🔥 LOGISTICS / SHIPMENT INFO CARD
+const LogisticsInfoCard = ({ shipment }: { shipment: any }) => {
+  if (!shipment) return null;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Truck className="h-5 w-5 text-gray-400" />
+          Logistics Details
+        </h3>
+        <ShipmentStatusBadge status={shipment.status} />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Provider</span>
+          <span className="text-sm font-medium text-gray-900">
+            {shipment.provider || "-"}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">AWB Code</span>
+          <span className="text-sm font-mono font-medium text-gray-900">
+            {shipment.awbCode || "-"}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Courier</span>
+          <span className="text-sm font-medium text-gray-900">
+            {shipment.courierName || "-"}
+          </span>
+        </div>
+
+        {shipment.trackingUrl && (
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-600">Tracking</span>
+            <a
+              href={shipment.trackingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-700 underline font-medium"
+            >
+              Open Tracking
+            </a>
+          </div>
+        )}
+
+        {shipment.pickupScheduledAt && (
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-sm text-gray-600">Pickup Scheduled</span>
+            <span className="text-sm font-medium text-gray-900">
+              {format(new Date(shipment.pickupScheduledAt), "MMM dd, yyyy h:mm a")}
+            </span>
+          </div>
+        )}
+
+        {shipment.cancelledAt && (
+          <>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-sm text-gray-600">Shipment Cancelled At</span>
+              <span className="text-sm font-medium text-gray-900">
+                {format(new Date(shipment.cancelledAt), "MMM dd, yyyy h:mm a")}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-sm text-gray-600">Shipment Cancelled By</span>
+              <span className="text-sm font-medium text-gray-900">
+                {shipment.cancelledBy || "-"}
+              </span>
+            </div>
+            {shipment.cancellationReason && (
+              <div className="py-2 mt-2 bg-red-50 p-3 rounded-lg border border-red-200">
+                <span className="text-sm text-gray-600 block mb-1">Shipment Cancellation Reason</span>
+                <p className="text-sm text-gray-900">{shipment.cancellationReason}</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function AdminOrderDetailsPage({
   params,
 }: {
@@ -98,7 +339,15 @@ export default function AdminOrderDetailsPage({
   useEffect(() => {
     if (order) {
       console.log("[DEBUG] Order Data Fetched:", order);
-      console.log("[DEBUG] Raw Order Status:", order.status);
+      console.log("[DEBUG] Cancellation Info:", {
+        cancelledBy: order.cancelledBy,
+        cancellationSource: order.cancellationSource,
+        cancelledAt: order.cancelledAt,
+        cancellationReason: order.cancellationReason,
+        refundStatus: order.refundStatus,
+        refundAmount: order.refundAmount,
+        refundProcessedAt: order.refundProcessedAt,
+      });
     }
   }, [order]);
 
@@ -170,6 +419,11 @@ export default function AdminOrderDetailsPage({
             <p className="text-sm text-gray-500 mt-1">
               Currently:{" "}
               <strong className="text-gray-900">{currentStatus}</strong>
+              {order.cancelledAt && (
+                <span className="ml-2 text-xs text-red-500">
+                  (Cancelled on {format(new Date(order.cancelledAt), "MMM dd, yyyy")})
+                </span>
+              )}
             </p>
           </div>
 
@@ -210,7 +464,7 @@ export default function AdminOrderDetailsPage({
 
         {/* 🔥 REST OF THE PAGE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN: CUSTOMER & ADDRESS */}
+          {/* LEFT COLUMN: CUSTOMER & ADDRESS & CANCELLATION INFO */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -271,6 +525,9 @@ export default function AdminOrderDetailsPage({
                 </p>
               </div>
             )}
+
+            {/* 🔥 CANCELLATION INFO - This is the key addition! */}
+            <CancellationInfoCard order={order} />
           </div>
 
           {/* RIGHT COLUMN: ITEMS & FINANCIALS & SHIPMENT */}
@@ -364,45 +621,10 @@ export default function AdminOrderDetailsPage({
               </div>
             </div>
 
-            {/* 🔥 SHIPMENT DETAILS CARD */}
+            {/* 🔥 LOGISTICS / SHIPMENT DETAILS CARD */}
             {order.shipment && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Shipment Details
-                  </h3>
-
-                  <ShipmentStatusBadge status={order.shipment.status} />
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <strong>Provider:</strong> {order.shipment.provider}
-                  </p>
-
-                  <p>
-                    <strong>AWB Code:</strong> {order.shipment.awbCode || "-"}
-                  </p>
-
-                  <p>
-                    <strong>Courier:</strong>{" "}
-                    {order.shipment.courierName || "-"}
-                  </p>
-
-                  {order.shipment.trackingUrl && (
-                    <p>
-                      <strong>Tracking:</strong>{" "}
-                      <a
-                        href={order.shipment.trackingUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 underline"
-                      >
-                        Open Tracking
-                      </a>
-                    </p>
-                  )}
-                </div>
+              <>
+                <LogisticsInfoCard shipment={order.shipment} />
 
                 {![
                   "PICKED_UP",
@@ -413,40 +635,21 @@ export default function AdminOrderDetailsPage({
                 ].includes(order.shipment.status) && (
                   <button
                     onClick={() => setIsShipmentCancelModalOpen(true)}
-                    className="mt-6 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
                     Cancel Shipment
                   </button>
                 )}
-
-                {order.shipment.status === "CANCELLED" && (
-                  <div className="mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-sm">
-                    <p>
-                      <strong>Cancelled By:</strong>{" "}
-                      {order.shipment.cancelledBy || "-"}
-                    </p>
-
-                    <p>
-                      <strong>Reason:</strong>{" "}
-                      {order.shipment.cancellationReason || "-"}
-                    </p>
-
-                    <p>
-                      <strong>Cancelled At:</strong>{" "}
-                      {order.shipment.cancelledAt
-                        ? new Date(order.shipment.cancelledAt).toLocaleString()
-                        : "-"}
-                    </p>
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Tracking Logs */}
       <AdminTrackingLogs orderId={order.id} currentStatus={currentStatus} />
+
       {/* 🔥 The Cancel Modal */}
-      // ===== UPDATE THE CancelOrderModal USAGE =====
       <CancelOrderModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
@@ -458,7 +661,6 @@ export default function AdminOrderDetailsPage({
         onSuccess={() => mutate()}
       />
 
-      
       {/* 🔥 The Cancel Shipment Modal */}
       {order?.shipment && (
         <CancelShipmentModal
