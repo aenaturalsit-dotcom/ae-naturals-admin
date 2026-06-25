@@ -250,6 +250,55 @@ export default function OrderDetails({ order, onUpdate }: OrderDetailsProps) {
               </div>
             </div>
           </div>
+
+          // ===== ADD THIS SECTION AFTER PAYMENT SUMMARY =====
+
+{/* Refund Status */}
+{order.refundStatus && order.refundStatus !== 'NOT_APPLICABLE' && (
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+    <h3 className="text-lg font-bold text-gray-900 mb-4">Refund Status</h3>
+    <div className="space-y-3 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-600">Status</span>
+        <span className={`font-medium ${
+          order.refundStatus === 'PROCESSED' ? 'text-green-600' :
+          order.refundStatus === 'PENDING' ? 'text-amber-600' :
+          order.refundStatus === 'REJECTED' ? 'text-red-600' :
+          order.refundStatus === 'APPROVED' ? 'text-blue-600' :
+          'text-gray-600'
+        }`}>
+          {order.refundStatus}
+        </span>
+      </div>
+      {order.refundAmount && (
+        <div className="flex justify-between">
+          <span className="text-gray-600">Amount</span>
+          <span className="font-medium">₹{order.refundAmount.toFixed(2)}</span>
+        </div>
+      )}
+      {order.refundProcessedAt && (
+        <div className="flex justify-between">
+          <span className="text-gray-600">Processed At</span>
+          <span className="font-medium">
+            {new Date(order.refundProcessedAt).toLocaleString()}
+          </span>
+        </div>
+      )}
+      {order.cancelledBy && (
+        <div className="flex justify-between">
+          <span className="text-gray-600">Cancelled By</span>
+          <span className="font-medium">{order.cancelledBy}</span>
+        </div>
+      )}
+      {order.cancellationSource && (
+        <div className="flex justify-between">
+          <span className="text-gray-600">Source</span>
+          <span className="font-medium">{order.cancellationSource}</span>
+        </div>
+      )}
+    </div>
+  </div>
+)}
         </div>
       </div>
 
