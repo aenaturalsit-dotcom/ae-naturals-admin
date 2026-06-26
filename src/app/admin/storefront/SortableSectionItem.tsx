@@ -1,12 +1,26 @@
-// src\app\admin\storefront\SortableSectionItem.tsx
+// src/app/admin/storefront/SortableSectionItem.tsx
+
+"use client";
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Eye, EyeOff, Trash2 } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Trash2, Copy } from "lucide-react";
 import { ThemeSection } from "@/lib/validators/storefront";
 import { useStorefrontStore } from "@/store/useStorefrontStore";
 
-export function SortableSectionItem({ section }: { section: ThemeSection }) {
+interface SortableSectionItemProps {
+  section: ThemeSection;
+  onToggle?: () => void; // Optional callback
+  onDuplicate?: () => void; // Optional callback
+  onDelete?: () => void; // Optional callback
+}
+
+export function SortableSectionItem({ 
+  section, 
+  onToggle,
+  onDuplicate,
+  onDelete 
+}: SortableSectionItemProps) {
   const {
     attributes,
     listeners,
@@ -15,11 +29,13 @@ export function SortableSectionItem({ section }: { section: ThemeSection }) {
     transition,
     isDragging,
   } = useSortable({ id: section.id });
+  
   const {
     activeSectionId,
     setActiveSectionId,
     removeSection,
     toggleSectionActive,
+    duplicateSection,
   } = useStorefrontStore();
 
   const style = {
@@ -30,6 +46,24 @@ export function SortableSectionItem({ section }: { section: ThemeSection }) {
   };
 
   const isSelected = activeSectionId === section.id;
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSectionActive(section.id);
+    onToggle?.();
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateSection(section.id);
+    onDuplicate?.();
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    removeSection(section.id);
+    onDelete?.();
+  };
 
   return (
     <div
@@ -42,40 +76,43 @@ export function SortableSectionItem({ section }: { section: ThemeSection }) {
           : "border-gray-200 hover:border-gray-300"
       } ${!section.isActive && "opacity-60 bg-gray-50"}`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab text-gray-400 hover:text-gray-600"
+          className="cursor-grab text-gray-400 hover:text-gray-600 flex-shrink-0"
         >
           <GripVertical size={16} />
         </div>
-        <div>
-          <p className="text-sm font-bold text-gray-900">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-gray-900 truncate">
             {section.type.replace("_", " ")}
           </p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
-            {(section.settings?.title as string) || "Global Config"}
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5 truncate">
+            {(section.settings?.title as string) || "Untitled"}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleSectionActive(section.id);
-          }}
-          className="p-1.5 text-gray-400 hover:text-gray-900"
+          onClick={handleDuplicate}
+          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+          title="Duplicate section"
+        >
+          <Copy size={15} />
+        </button>
+        <button
+          onClick={handleToggle}
+          className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors"
+          title={section.isActive ? "Hide section" : "Show section"}
         >
           {section.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
         </button>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            removeSection(section.id);
-          }}
-          className="p-1.5 text-red-400 hover:text-red-600"
+          onClick={handleRemove}
+          className="p-1.5 text-red-400 hover:text-red-600 transition-colors"
+          title="Delete section"
         >
           <Trash2 size={16} />
         </button>

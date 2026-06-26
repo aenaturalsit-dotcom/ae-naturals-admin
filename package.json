@@ -30,6 +30,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-error-boundary": "^6.1.2",
     "react-hook-form": "^7.71.2",
     "react-hot-toast": "^2.6.0",
     "set-cookie-parser": "^3.1.0",
