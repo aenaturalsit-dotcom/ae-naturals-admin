@@ -50,7 +50,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
         adminMenusService.getProducts?.(),
       ]);
       const menu = menuRes?.data || menuRes;
-      
+
       // Normalize groups to ensure showHeading exists
       const normalizedGroups = (menu?.groups || []).map((group: any) => ({
         ...group,
@@ -59,7 +59,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           showHeading: col.showHeading !== undefined ? col.showHeading : true,
         })),
       }));
-      
+
       setGroups(normalizedGroups);
 
       const extractList = (res: any) => {
@@ -91,28 +91,29 @@ export default function MenuBuilder({ slug }: { slug: string }) {
           link: g.link || null,
           position: gIdx,
           type: g.type || "dropdown",
-          navLink: g.type === "link" ? (g.navLink || "") : null,
-          columns: g.type === "link" ? [] : (g.columns || []).map((c: any, cIdx: number) => ({
-            title: c.title,
-            position: cIdx,
-            showHeading: c.showHeading !== false,
-            items: (c.items || []).map((i: any, iIdx: number) => ({
-              label: i.label || "",
-              slug: i.slug || "",
-              type: i.type || "COLLECTION",
-              position: iIdx,
-              referenceId: i.referenceId || null,
-            })),
-          })),
+          navLink: g.type === "link" ? g.navLink || "" : null,
+          columns:
+            g.type === "link"
+              ? []
+              : (g.columns || []).map((c: any, cIdx: number) => ({
+                  title: c.title,
+                  position: cIdx,
+                  showHeading: c.showHeading !== false,
+                  items: (c.items || []).map((i: any, iIdx: number) => ({
+                    label: i.label || "",
+                    slug: i.slug || "",
+                    type: i.type || "COLLECTION",
+                    position: iIdx,
+                    referenceId: i.referenceId || null,
+                  })),
+                })),
         })),
       };
-      
-      console.log('📤 Sending payload:', JSON.stringify(payload, null, 2));
-      
+
       await adminMenusService.updateMenu(slug, payload);
       toast.success("Menu published successfully", { id: toastId });
     } catch (e) {
-      console.error('❌ Save error:', e);
+      console.error("❌ Save error:", e);
       toast.error("Save failed", { id: toastId });
     } finally {
       setSaving(false);
@@ -282,12 +283,11 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                           <button
                             onClick={() => {
                               const u = [...groups];
-                              const currentValue = u[gIdx].columns[cIdx].showHeading;
-                              u[gIdx].columns[cIdx].showHeading = currentValue === false ? true : false;
-                              console.log('🔄 Toggled heading:', {
-                                column: u[gIdx].columns[cIdx].title,
-                                newValue: u[gIdx].columns[cIdx].showHeading
-                              });
+                              const currentValue =
+                                u[gIdx].columns[cIdx].showHeading;
+                              u[gIdx].columns[cIdx].showHeading =
+                                currentValue === false ? true : false;
+
                               setGroups(u);
                             }}
                             className={`p-1.5 rounded-lg transition-all duration-200 ${
@@ -295,7 +295,11 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                                 : "bg-gray-200 text-gray-500 hover:bg-gray-300"
                             }`}
-                            title={col.showHeading !== false ? "Hide heading" : "Show heading"}
+                            title={
+                              col.showHeading !== false
+                                ? "Hide heading"
+                                : "Show heading"
+                            }
                           >
                             {col.showHeading !== false ? (
                               <Eye size={14} />
@@ -303,7 +307,7 @@ export default function MenuBuilder({ slug }: { slug: string }) {
                               <EyeOff size={14} />
                             )}
                           </button>
-                          
+
                           {/* DELETE COLUMN BUTTON */}
                           <button
                             onClick={() => {

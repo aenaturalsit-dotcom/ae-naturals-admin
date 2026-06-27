@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import  apiClient  from "@/lib/api-client";
+import apiClient from "@/lib/api-client";
 import { Plus, Edit3, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 
@@ -14,12 +14,11 @@ export default function AdminCollectionsPage() {
     queryFn: async () => {
       try {
         const res = await apiClient.get("/admin/collections");
-        
+
         // 🚨 2. HARD DEBUG: See exactly what the backend sends in F12 Console
-        console.log("🟢 RAW COLLECTIONS RESPONSE:", res);
 
         let finalArray: any[] = [];
-        
+
         // 🚨 3. UNWRAP SAFELY: Handle your custom Axios interceptor
         if (Array.isArray(res)) {
           finalArray = res;
@@ -39,12 +38,11 @@ export default function AdminCollectionsPage() {
     refetchOnMount: "always", // Force it to fetch from DB every time you open the page
   });
 
-
   // 🚨 THE FIX: A helper function to safely check if a string is a valid URL
   // This prevents Next.js <Image /> from crashing the entire page with "Invalid URL"
   const isValidImageUrl = (url?: string) => {
-    if (!url || typeof url !== 'string') return false;
-    if (url.startsWith('/')) return true; // Relative paths like /placeholder.png are fine
+    if (!url || typeof url !== "string") return false;
+    if (url.startsWith("/")) return true; // Relative paths like /placeholder.png are fine
     try {
       new URL(url); // This will throw an error if the URL is malformed
       return true;
@@ -57,9 +55,11 @@ export default function AdminCollectionsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-black text-gray-900">Collections</h1>
-          <p className="text-gray-500 mt-1">Manage your curated product groups</p>
+          <p className="text-gray-500 mt-1">
+            Manage your curated product groups
+          </p>
         </div>
-        <Link 
+        <Link
           href="/admin/collections/new"
           className="bg-gray-900 hover:bg-[#006044] text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-colors shadow-sm"
         >
@@ -79,36 +79,65 @@ export default function AdminCollectionsPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
-              <tr><td colSpan={4} className="p-8 text-center text-gray-400 font-medium">Loading collections...</td></tr>
+              <tr>
+                <td
+                  colSpan={4}
+                  className="p-8 text-center text-gray-400 font-medium"
+                >
+                  Loading collections...
+                </td>
+              </tr>
             ) : collections?.length === 0 ? (
-              <tr><td colSpan={4} className="p-8 text-center text-gray-400 font-medium">No collections found.</td></tr>
+              <tr>
+                <td
+                  colSpan={4}
+                  className="p-8 text-center text-gray-400 font-medium"
+                >
+                  No collections found.
+                </td>
+              </tr>
             ) : (
               collections?.map((col: any) => (
-                <tr key={col.id} className="hover:bg-gray-50 transition-colors group">
+                <tr
+                  key={col.id}
+                  className="hover:bg-gray-50 transition-colors group"
+                >
                   <td className="p-4 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden relative border border-gray-200">
                       {/* 🚨 APPLY FIX: Only render <Image /> if the URL is valid */}
                       {isValidImageUrl(col.image) ? (
-                        <Image src={col.image} alt={col.name || "Collection"} fill className="object-cover" />
+                        <Image
+                          src={col.image}
+                          alt={col.name || "Collection"}
+                          fill
+                          className="object-cover"
+                        />
                       ) : (
                         <ImageIcon className="w-5 h-5 text-gray-300" />
                       )}
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900 group-hover:text-[#006044] transition-colors">{col.name}</p>
-                      <p className="text-xs text-gray-400 font-medium">/{col.slug}</p>
+                      <p className="font-bold text-gray-900 group-hover:text-[#006044] transition-colors">
+                        {col.name}
+                      </p>
+                      <p className="text-xs text-gray-400 font-medium">
+                        /{col.slug}
+                      </p>
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-black ${col.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-black ${col.isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                    >
                       {col.isActive ? "Active" : "Hidden"}
                     </span>
                   </td>
                   <td className="p-4 font-bold text-gray-600">
-                    {col._count?.products || 0} <span className="font-medium text-gray-400">Items</span>
+                    {col._count?.products || 0}{" "}
+                    <span className="font-medium text-gray-400">Items</span>
                   </td>
                   <td className="p-4 text-right">
-                    <Link 
+                    <Link
                       href={`/admin/collections/${col.id}`}
                       className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-[#006044] hover:bg-green-50 rounded-lg transition-colors"
                       title="Edit Collection"

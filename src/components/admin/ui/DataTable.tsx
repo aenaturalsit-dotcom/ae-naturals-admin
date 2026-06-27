@@ -41,19 +41,6 @@ export function DataTable<TData, TValue>({
   // const currentPage = externalPage ?? Number(searchParams.get("page")) || 1;
   const currentPage = externalPage ?? (Number(searchParams.get("page")) || 1);
 
-
-  // Debug log to see what's being passed
-  useEffect(() => {
-    console.log("📊 DataTable Debug:", {
-      dataLength: data?.length || 0,
-      pageCount,
-      totalItems,
-      currentPage,
-      isLoading,
-      hasData: data && data.length > 0,
-    });
-  }, [data, pageCount, totalItems, currentPage, isLoading]);
-
   const table = useReactTable({
     data: data || [],
     columns,
@@ -73,13 +60,15 @@ export function DataTable<TData, TValue>({
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
       }
     },
-    [pathname, router, searchParams, onPageChange]
+    [pathname, router, searchParams, onPageChange],
   );
 
   // If no data and not loading, show empty state
   if (!isLoading && (!data || data.length === 0)) {
     return (
-      <div className={`bg-white overflow-hidden ${noBorder ? '' : 'rounded-xl border border-gray-200 shadow-sm'}`}>
+      <div
+        className={`bg-white overflow-hidden ${noBorder ? "" : "rounded-xl border border-gray-200 shadow-sm"}`}
+      >
         <div className="p-12 text-center">
           <p className="text-gray-500 font-medium">No results found.</p>
           <p className="text-sm text-gray-400 mt-1">
@@ -93,19 +82,24 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {/* Conditionally apply border/shadow */}
-      <div className={`bg-white overflow-hidden ${noBorder ? '' : 'rounded-xl border border-gray-200 shadow-sm'}`}>
+      <div
+        className={`bg-white overflow-hidden ${noBorder ? "" : "rounded-xl border border-gray-200 shadow-sm"}`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-600">
             <thead className="text-xs uppercase bg-gray-50/80 text-gray-500 border-b border-gray-200">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="px-6 py-4 font-bold tracking-wider whitespace-nowrap">
+                    <th
+                      key={header.id}
+                      className="px-6 py-4 font-bold tracking-wider whitespace-nowrap"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </th>
                   ))}
@@ -117,7 +111,9 @@ export function DataTable<TData, TValue>({
                 <tr>
                   <td colSpan={columns.length} className="h-48 text-center">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#217A6E]" />
-                    <p className="mt-2 text-gray-500 font-medium">Loading data...</p>
+                    <p className="mt-2 text-gray-500 font-medium">
+                      Loading data...
+                    </p>
                   </td>
                 </tr>
               ) : table.getRowModel().rows?.length ? (
@@ -130,7 +126,7 @@ export function DataTable<TData, TValue>({
                       <td key={cell.id} className="px-6 py-4">
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </td>
                     ))}
@@ -138,7 +134,10 @@ export function DataTable<TData, TValue>({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="h-48 text-center text-gray-500 font-medium">
+                  <td
+                    colSpan={columns.length}
+                    className="h-48 text-center text-gray-500 font-medium"
+                  >
                     No results found.
                   </td>
                 </tr>
@@ -152,8 +151,10 @@ export function DataTable<TData, TValue>({
       {totalItems > 0 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-gray-500 font-medium">
-            Showing <span className="font-bold text-gray-900">{data.length}</span> of{" "}
-            <span className="font-bold text-gray-900">{totalItems}</span> results
+            Showing{" "}
+            <span className="font-bold text-gray-900">{data.length}</span> of{" "}
+            <span className="font-bold text-gray-900">{totalItems}</span>{" "}
+            results
           </p>
           <div className="flex items-center space-x-2">
             <button
@@ -169,7 +170,9 @@ export function DataTable<TData, TValue>({
             </span>
             <button
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === pageCount || isLoading || pageCount === 0}
+              disabled={
+                currentPage === pageCount || isLoading || pageCount === 0
+              }
               className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Next page"
             >

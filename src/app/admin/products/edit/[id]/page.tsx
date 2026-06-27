@@ -39,7 +39,6 @@ export default function EditProductPage({
         Array.isArray(data) ? data : (data as any)?.data || []
       ) as any[];
       const found = list.find((p: any) => p.id === id);
-      console.log("Raw product data:", found);
 
       if (!found) throw new Error("Product not found");
 

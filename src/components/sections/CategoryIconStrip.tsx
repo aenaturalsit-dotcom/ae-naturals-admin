@@ -28,41 +28,41 @@ interface CategoryIconStripProps {
 }
 
 // Image size mapping
-const getImageSize = (size: 'small' | 'medium' | 'large' = 'medium') => {
+const getImageSize = (size: "small" | "medium" | "large" = "medium") => {
   switch (size) {
-    case 'small':
-      return { 
-        width: 64, 
-        height: 64, 
-        container: 'w-16 h-16',
-        iconSize: 'text-2xl'
+    case "small":
+      return {
+        width: 64,
+        height: 64,
+        container: "w-16 h-16",
+        iconSize: "text-2xl",
       };
-    case 'large':
-      return { 
-        width: 100, 
-        height: 100, 
-        container: 'w-24 h-24',
-        iconSize: 'text-4xl'
+    case "large":
+      return {
+        width: 100,
+        height: 100,
+        container: "w-24 h-24",
+        iconSize: "text-4xl",
       };
     default:
-      return { 
-        width: 80, 
-        height: 80, 
-        container: 'w-20 h-20',
-        iconSize: 'text-3xl'
+      return {
+        width: 80,
+        height: 80,
+        container: "w-20 h-20",
+        iconSize: "text-3xl",
       };
   }
 };
 
 // Shape mapping
-const getImageShape = (shape: 'circle' | 'square' | 'rounded' = 'circle') => {
+const getImageShape = (shape: "circle" | "square" | "rounded" = "circle") => {
   switch (shape) {
-    case 'square':
-      return 'rounded-none';
-    case 'rounded':
-      return 'rounded-2xl';
+    case "square":
+      return "rounded-none";
+    case "rounded":
+      return "rounded-2xl";
     default:
-      return 'rounded-full';
+      return "rounded-full";
   }
 };
 
@@ -75,15 +75,15 @@ export function CategoryIconStrip({
   className,
 }: CategoryIconStripProps) {
   const {
-    title = 'Shop by Category',
+    title = "Shop by Category",
     subtitle,
     categoryIds = [],
-    layout = 'grid',
-    columns = '5',
+    layout = "grid",
+    columns = "5",
     showProductCount = true,
-    imageSize = 'medium',
+    imageSize = "medium",
     showCategoryNames = true,
-    imageShape = 'circle',
+    imageShape = "circle",
     displayCount = 12,
   } = settings;
 
@@ -97,30 +97,30 @@ export function CategoryIconStrip({
     // If we have categories data from the backend
     if (data?.categories && data.categories.length > 0) {
       // Filter categories based on selected IDs
-      const filtered = data.categories.filter((cat: any) => 
-        categoryIds.includes(cat.id)
+      const filtered = data.categories.filter((cat: any) =>
+        categoryIds.includes(cat.id),
       );
-      
+
       if (filtered.length > 0) {
         setCategories(filtered);
         setIsLoading(false);
         return;
       }
-      
+
       // If no filtered categories found, but we have categoryIds
       if (categoryIds.length > 0) {
         // Try to find all selected categories
         const foundCategories = categoryIds
-          .map(id => data.categories?.find((cat: any) => cat.id === id))
+          .map((id) => data.categories?.find((cat: any) => cat.id === id))
           .filter(Boolean);
-        
+
         if (foundCategories.length > 0) {
           setCategories(foundCategories);
           setIsLoading(false);
           return;
         }
       }
-      
+
       // No matching categories
       setCategories([]);
       setIsLoading(false);
@@ -142,28 +142,13 @@ export function CategoryIconStrip({
   // Memoize displayed categories
   const displayCategories = useMemo(() => {
     if (isLoading) return [];
-    
+
     const validCategories = categories
-      .filter(cat => cat !== undefined && cat !== null)
+      .filter((cat) => cat !== undefined && cat !== null)
       .slice(0, displayCount);
 
     return validCategories;
   }, [categories, displayCount, isLoading]);
-
-  // Debug logging (remove in production)
-  useEffect(() => {
-    if (previewMode) {
-      console.log('CategoryIconStrip Debug:', {
-        categoryIds,
-        totalCategoriesFromBackend: data?.categories?.length || 0,
-        filteredCategories: categories.length,
-        displayCategories: displayCategories.length,
-        isLoading,
-        previewMode,
-        hasData: !!data?.categories,
-      });
-    }
-  }, [categoryIds, categories, displayCategories, isLoading, previewMode, data]);
 
   // ============================================================
   // RENDER: Empty State - No categories selected
@@ -176,12 +161,13 @@ export function CategoryIconStrip({
             <span className="text-3xl">🏷️</span>
           </div>
           <div>
-            <p className="text-gray-600 font-semibold text-lg">Category Icon Strip</p>
-            <p className="text-sm text-gray-400 mt-1">
-              No categories selected
+            <p className="text-gray-600 font-semibold text-lg">
+              Category Icon Strip
             </p>
+            <p className="text-sm text-gray-400 mt-1">No categories selected</p>
             <p className="text-xs text-gray-400 mt-2 max-w-sm">
-              Click on this section in the builder sidebar to configure which categories to display
+              Click on this section in the builder sidebar to configure which
+              categories to display
             </p>
           </div>
           <div className="flex gap-3 mt-4 opacity-50">
@@ -205,7 +191,9 @@ export function CategoryIconStrip({
       <div className="py-8">
         <div className="container mx-auto px-4">
           <div className="animate-pulse">
-            {title && <div className="h-8 w-48 bg-gray-200 rounded mx-auto mb-4" />}
+            {title && (
+              <div className="h-8 w-48 bg-gray-200 rounded mx-auto mb-4" />
+            )}
             <div className="grid grid-cols-5 gap-4">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex flex-col items-center gap-3">
@@ -230,12 +218,15 @@ export function CategoryIconStrip({
           <AlertCircle className="w-8 h-8 text-amber-500" />
           <p className="text-amber-700 font-medium">No categories found</p>
           <p className="text-sm text-amber-600 max-w-md">
-            Selected categories ({categoryIds.length}) could not be found. 
+            Selected categories ({categoryIds.length}) could not be found.
             Please ensure categories exist in your store.
           </p>
           <div className="flex flex-wrap gap-2 justify-center mt-2">
             {categoryIds.slice(0, 5).map((id) => (
-              <span key={id} className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
+              <span
+                key={id}
+                className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded"
+              >
                 ID: {id.substring(0, 8)}...
               </span>
             ))}
@@ -270,14 +261,14 @@ export function CategoryIconStrip({
   const GridLayout = () => (
     <div
       className={cn(
-        'grid gap-4 md:gap-6',
+        "grid gap-4 md:gap-6",
         {
-          'grid-cols-4': numColumns === 4,
-          'grid-cols-5': numColumns === 5,
-          'grid-cols-6': numColumns === 6,
-          'grid-cols-3 md:grid-cols-4 lg:grid-cols-5': !numColumns,
+          "grid-cols-4": numColumns === 4,
+          "grid-cols-5": numColumns === 5,
+          "grid-cols-6": numColumns === 6,
+          "grid-cols-3 md:grid-cols-4 lg:grid-cols-5": !numColumns,
         },
-        className
+        className,
       )}
     >
       {displayCategories.map((category) => (
@@ -335,7 +326,7 @@ export function CategoryIconStrip({
         )}
 
         {/* Content */}
-        {layout === 'scrollable' ? <ScrollableLayout /> : <GridLayout />}
+        {layout === "scrollable" ? <ScrollableLayout /> : <GridLayout />}
 
         {/* Preview indicator */}
         {previewMode && displayCategories.length > 0 && (
@@ -361,7 +352,7 @@ interface CategoryItemProps {
     slug: string;
     icon?: string | null;
     image?: string | null;
-    color?:string | null;
+    color?: string | null;
     productCount?: number;
   };
   imageSize: { width: number; height: number; container: string };
@@ -385,26 +376,29 @@ function CategoryItem({
 }: CategoryItemProps) {
   // Use category.image or category.icon
   const imageUrl = category.image || category.icon;
-  const hasImage = imageUrl && imageUrl.startsWith('http');
-  const initial = category.name?.charAt(0)?.toUpperCase() || '?';
-  
+  const hasImage = imageUrl && imageUrl.startsWith("http");
+  const initial = category.name?.charAt(0)?.toUpperCase() || "?";
+
   // Use category color if available
-  const bgColor = category.color || '#006044';
-  console.log(category,"====================================image")
+  const bgColor = category.color || "#006044";
   const content = (
-    <div className={cn(
-      "flex flex-col items-center group cursor-pointer transition-all duration-200",
-      !previewMode && "hover:scale-105"
-    )}>
+    <div
+      className={cn(
+        "flex flex-col items-center group cursor-pointer transition-all duration-200",
+        !previewMode && "hover:scale-105",
+      )}
+    >
       {/* Icon/Image Container */}
       <div
         className={cn(
-          'relative overflow-hidden border-2 border-gray-100',
+          "relative overflow-hidden border-2 border-gray-100",
           shapeClass,
           imageSize.container,
-          'transition-all duration-300',
-          !previewMode && 'group-hover:shadow-lg group-hover:shadow-[#006044]/10 group-hover:border-[#006044]/30',
-          !previewMode && 'group-hover:bg-gradient-to-br group-hover:from-[#006044]/5 group-hover:to-[#006044]/10'
+          "transition-all duration-300",
+          !previewMode &&
+            "group-hover:shadow-lg group-hover:shadow-[#006044]/10 group-hover:border-[#006044]/30",
+          !previewMode &&
+            "group-hover:bg-gradient-to-br group-hover:from-[#006044]/5 group-hover:to-[#006044]/10",
         )}
         style={{
           backgroundColor: hasImage ? undefined : bgColor,
@@ -418,11 +412,12 @@ function CategoryItem({
             loading="lazy"
             onError={(e) => {
               const target = e.currentTarget;
-              target.style.display = 'none';
+              target.style.display = "none";
               const parent = target.parentElement;
               if (parent) {
-                const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full flex items-center justify-center text-2xl font-bold text-white';
+                const fallback = document.createElement("div");
+                fallback.className =
+                  "w-full h-full flex items-center justify-center text-2xl font-bold text-white";
                 fallback.textContent = initial;
                 parent.appendChild(fallback);
               }
@@ -437,20 +432,25 @@ function CategoryItem({
 
       {/* Category Name */}
       {showCategoryName && (
-        <p className={cn(
-          'font-medium text-gray-800 mt-2 text-center line-clamp-2',
-          isScrollable ? 'text-sm' : 'text-xs md:text-sm'
-        )}>
+        <p
+          className={cn(
+            "font-medium text-gray-800 mt-2 text-center line-clamp-2",
+            isScrollable ? "text-sm" : "text-xs md:text-sm",
+          )}
+        >
           {category.name}
         </p>
       )}
 
       {/* Product Count */}
-      {showProductCount && category.productCount !== undefined && category.productCount > 0 && (
-        <p className="text-xs text-gray-400 mt-0.5">
-          {category.productCount} product{category.productCount !== 1 ? 's' : ''}
-        </p>
-      )}
+      {showProductCount &&
+        category.productCount !== undefined &&
+        category.productCount > 0 && (
+          <p className="text-xs text-gray-400 mt-0.5">
+            {category.productCount} product
+            {category.productCount !== 1 ? "s" : ""}
+          </p>
+        )}
 
       {/* Hover indicator - only in non-preview */}
       {!previewMode && (
@@ -467,8 +467,8 @@ function CategoryItem({
   }
 
   return (
-    <Link 
-      href={`/collections/${category.slug}`} 
+    <Link
+      href={`/collections/${category.slug}`}
       className="focus:outline-none focus:ring-2 focus:ring-[#006044] focus:ring-offset-2 rounded-lg"
     >
       {content}
