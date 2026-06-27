@@ -31,7 +31,7 @@ interface HomeRendererProps {
   config: {
     sectionsOrder: ThemeSection[];
   };
-  data: StorefrontData['data'];
+  data: StorefrontData["data"];
   previewMode?: boolean;
   className?: string;
 }
@@ -70,7 +70,7 @@ const SECTION_REGISTRY: Record<string, SectionRegistryItem> = {
       const settings = getTypedSettings<any>(section);
       if (settings?.collectionId && data?.collections) {
         const selectedCollection = data.collections.find(
-          (c: any) => String(c.id) === String(settings.collectionId)
+          (c: any) => String(c.id) === String(settings.collectionId),
         );
         if (selectedCollection) {
           return [selectedCollection];
@@ -96,7 +96,7 @@ const SECTION_REGISTRY: Record<string, SectionRegistryItem> = {
         const target = data?.collections?.find(
           (c: any) =>
             String(c.slug) === String(selector) ||
-            String(c.id) === String(selector)
+            String(c.id) === String(selector),
         );
         if (target) {
           const rawProducts = target.products || [];
@@ -146,16 +146,7 @@ const SECTION_REGISTRY: Record<string, SectionRegistryItem> = {
     dataResolver: (section, data) => {
       // ✅ Ensure categories data is properly passed
       const categories = data?.categories || [];
-      
-      // Debug logging (only in preview mode)
-      if (data?.previewMode) {
-        console.log('HomeRenderer - Category Data:', {
-          totalCategories: categories.length,
-          categoryIds: getTypedSettings<any>(section)?.categoryIds || [],
-          hasCategories: categories.length > 0,
-        });
-      }
-      
+
       // Return the entire data object with categories
       return {
         ...data,
@@ -174,7 +165,10 @@ interface SectionErrorBoundaryProps {
   children: React.ReactNode;
 }
 
-function SectionErrorBoundary({ section, children }: SectionErrorBoundaryProps) {
+function SectionErrorBoundary({
+  section,
+  children,
+}: SectionErrorBoundaryProps) {
   return (
     <ErrorBoundary
       fallback={
@@ -188,7 +182,8 @@ function SectionErrorBoundary({ section, children }: SectionErrorBoundaryProps) 
                 Failed to load {section.type.replace("_", " ")}
               </h4>
               <p className="text-xs text-red-600">
-                This section encountered an error. Please check the configuration.
+                This section encountered an error. Please check the
+                configuration.
               </p>
             </div>
           </div>
@@ -206,19 +201,25 @@ function SectionErrorBoundary({ section, children }: SectionErrorBoundaryProps) 
 
 interface SectionLoaderProps {
   section: ThemeSection;
-  data: StorefrontData['data'];
+  data: StorefrontData["data"];
   previewMode?: boolean;
   index: number;
 }
 
-function SectionLoader({ section, data, previewMode, index }: SectionLoaderProps) {
+function SectionLoader({
+  section,
+  data,
+  previewMode,
+  index,
+}: SectionLoaderProps) {
   const registryItem = SECTION_REGISTRY[section.type];
 
   if (!registryItem) {
     return (
       <div className="p-4 m-4 bg-yellow-50 border border-yellow-200 rounded-xl">
         <p className="text-sm text-yellow-700">
-          Unknown section type: <span className="font-mono">{section.type}</span>
+          Unknown section type:{" "}
+          <span className="font-mono">{section.type}</span>
         </p>
       </div>
     );
@@ -251,7 +252,7 @@ function SectionLoader({ section, data, previewMode, index }: SectionLoaderProps
     <section
       key={section.id}
       id={section.id}
-      className={`w-full ${!section.isActive ? 'opacity-50 pointer-events-none' : ''}`}
+      className={`w-full ${!section.isActive ? "opacity-50 pointer-events-none" : ""}`}
       data-section-type={section.type}
       data-section-id={section.id}
       data-section-active={section.isActive}
@@ -301,22 +302,8 @@ export default function HomeRenderer({
   // Memoize active sections
   const activeSections = useMemo(() => {
     if (!config?.sectionsOrder) return [];
-    return config.sectionsOrder.filter(
-      (section) => section.isActive !== false
-    );
+    return config.sectionsOrder.filter((section) => section.isActive !== false);
   }, [config?.sectionsOrder]);
-
-  // Debug: Log data being passed
-  useMemo(() => {
-    if (previewMode) {
-      console.log('HomeRenderer - Data received:', {
-        hasCategories: !!(data?.categories),
-        categoriesCount: data?.categories?.length || 0,
-        activeSectionsCount: activeSections.length,
-        categorySection: activeSections.find(s => s.type === 'CATEGORY_ICON_STRIP'),
-      });
-    }
-  }, [data, activeSections, previewMode]);
 
   // Memoize rendered sections
   const renderedSections = useMemo(() => {
@@ -357,9 +344,7 @@ export default function HomeRenderer({
   return (
     <div className={`w-full flex flex-col gap-0 bg-white ${className}`}>
       {previewIndicator}
-      <Suspense fallback={<SectionSkeleton />}>
-        {renderedSections}
-      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>{renderedSections}</Suspense>
     </div>
   );
 }
@@ -392,6 +377,8 @@ export function isSectionRegistered(type: string): boolean {
 /**
  * Get section registry item
  */
-export function getSectionRegistryItem(type: string): SectionRegistryItem | null {
+export function getSectionRegistryItem(
+  type: string,
+): SectionRegistryItem | null {
   return SECTION_REGISTRY[type] || null;
 }

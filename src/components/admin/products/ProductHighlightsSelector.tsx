@@ -16,7 +16,6 @@ export default function ProductHighlightsSelector({
   onChange,
 }: Props) {
   // 🔥 NEW: Monitor every render cycle
-  console.log("[Highlights] Component Rendered. Current selectedIds in props:", selectedIds);
   const { data: masterHighlights = [], isLoading } = useQuery({
     queryKey: ["admin-features"],
     queryFn: async () => {
@@ -38,7 +37,6 @@ export default function ProductHighlightsSelector({
     }
 
     // 🔥 DEBUG LOG: CLICK ACTION
-    console.log(`[Highlights] toggleHighlight fired. Sending to parent:`, updatedIds);
 
     onChange(updatedIds);
   };
@@ -60,17 +58,12 @@ export default function ProductHighlightsSelector({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {Array.isArray(masterHighlights) &&
           masterHighlights.map((feature: any) => {
-            
             const IconComponent =
               (LucideIcons as any)[feature.icon] || LucideIcons.CheckCircle;
 
             const isSelected =
               Array.isArray(selectedIds) && selectedIds.includes(feature.id);
-// 🔥 NEW: Check if the condition is actually meeting
-        if (isSelected) {
-          console.log(`[Highlights] matches found! Green should show for: ${feature.title}`);
-        }
-          
+
             return (
               <button
                 type="button"

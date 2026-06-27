@@ -1,7 +1,5 @@
 // src\app\admin\orders\[id]\page.tsx
 
-
-
 "use client";
 
 import { use, useState, useEffect } from "react";
@@ -136,7 +134,8 @@ const CancellationInfoCard = ({ order }: { order: any }) => {
 
   const isCancelled = order.status === "CANCELLED";
   const isReturned = order.status === "RETURNED";
-  const hasRefund = order.refundStatus && order.refundStatus !== "NOT_APPLICABLE";
+  const hasRefund =
+    order.refundStatus && order.refundStatus !== "NOT_APPLICABLE";
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -210,20 +209,15 @@ const CancellationInfoCard = ({ order }: { order: any }) => {
         )}
 
         {/* Cancellation Log (if any) */}
-        {order.orderCancellationLogs && order.orderCancellationLogs.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <button
-              onClick={() => {
-                // Show cancellation logs in a modal or expandable section
-                console.log("Cancellation Logs:", order.orderCancellationLogs);
-              }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              <FileText className="w-4 h-4" />
-              View Audit Log ({order.orderCancellationLogs.length})
-            </button>
-          </div>
-        )}
+        {order.orderCancellationLogs &&
+          order.orderCancellationLogs.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                <FileText className="w-4 h-4" />
+                View Audit Log ({order.orderCancellationLogs.length})
+              </button>
+            </div>
+          )}
       </div>
     </div>
   );
@@ -283,7 +277,10 @@ const LogisticsInfoCard = ({ shipment }: { shipment: any }) => {
           <div className="flex justify-between items-center py-2 border-b border-gray-100">
             <span className="text-sm text-gray-600">Pickup Scheduled</span>
             <span className="text-sm font-medium text-gray-900">
-              {format(new Date(shipment.pickupScheduledAt), "MMM dd, yyyy h:mm a")}
+              {format(
+                new Date(shipment.pickupScheduledAt),
+                "MMM dd, yyyy h:mm a",
+              )}
             </span>
           </div>
         )}
@@ -291,21 +288,29 @@ const LogisticsInfoCard = ({ shipment }: { shipment: any }) => {
         {shipment.cancelledAt && (
           <>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">Shipment Cancelled At</span>
+              <span className="text-sm text-gray-600">
+                Shipment Cancelled At
+              </span>
               <span className="text-sm font-medium text-gray-900">
                 {format(new Date(shipment.cancelledAt), "MMM dd, yyyy h:mm a")}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-sm text-gray-600">Shipment Cancelled By</span>
+              <span className="text-sm text-gray-600">
+                Shipment Cancelled By
+              </span>
               <span className="text-sm font-medium text-gray-900">
                 {shipment.cancelledBy || "-"}
               </span>
             </div>
             {shipment.cancellationReason && (
               <div className="py-2 mt-2 bg-red-50 p-3 rounded-lg border border-red-200">
-                <span className="text-sm text-gray-600 block mb-1">Shipment Cancellation Reason</span>
-                <p className="text-sm text-gray-900">{shipment.cancellationReason}</p>
+                <span className="text-sm text-gray-600 block mb-1">
+                  Shipment Cancellation Reason
+                </span>
+                <p className="text-sm text-gray-900">
+                  {shipment.cancellationReason}
+                </p>
               </div>
             )}
           </>
@@ -334,22 +339,6 @@ export default function AdminOrderDetailsPage({
     isLoading,
     mutate,
   } = useSWR(orderId ? `/admin/orders/${orderId}` : null, fetcher);
-
-  // --- DEBUGGING LOGS ---
-  useEffect(() => {
-    if (order) {
-      console.log("[DEBUG] Order Data Fetched:", order);
-      console.log("[DEBUG] Cancellation Info:", {
-        cancelledBy: order.cancelledBy,
-        cancellationSource: order.cancellationSource,
-        cancelledAt: order.cancelledAt,
-        cancellationReason: order.cancellationReason,
-        refundStatus: order.refundStatus,
-        refundAmount: order.refundAmount,
-        refundProcessedAt: order.refundProcessedAt,
-      });
-    }
-  }, [order]);
 
   // --- ERROR / LOADING STATES ---
   if (error) {
@@ -421,7 +410,8 @@ export default function AdminOrderDetailsPage({
               <strong className="text-gray-900">{currentStatus}</strong>
               {order.cancelledAt && (
                 <span className="ml-2 text-xs text-red-500">
-                  (Cancelled on {format(new Date(order.cancelledAt), "MMM dd, yyyy")})
+                  (Cancelled on{" "}
+                  {format(new Date(order.cancelledAt), "MMM dd, yyyy")})
                 </span>
               )}
             </p>
