@@ -3,15 +3,7 @@
  * Do not use raw string unions for Statuses. Enums allow you to 
  * change the underlying string in one place without breaking logic.
  */
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  PROCESSING = 'PROCESSING',
-  SHIPPED = 'SHIPPED',
-  DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED',
-  RETURNED = 'RETURNED'
-}
+
 
 export enum Role {
   STORE_MANAGER = 'STORE_MANAGER',
@@ -76,19 +68,7 @@ export interface AddressSnapshot {
   pincode: string;
 }
 
-export interface Order {
-  id: string;
-  storeId: string;
-  userId: string;
-  totalAmount: number;
-  status: OrderStatus;
-  createdAt: string;
-  user: Pick<User, 'name' | 'phone' | 'email'>;
-  items?: OrderItem[];
-  addressSnapshot?: AddressSnapshot;
-  paymentProvider?: string;
-  shippingCost?: number;
-}
+
 
 // --- DASHBOARD & UI TYPES ---
 
@@ -110,3 +90,6 @@ export interface StatCardProps {
     isUp: boolean;
   }; // Optional trend indicator for production dashboards
 }
+
+
+
