@@ -1,79 +1,62 @@
 // app/admin/returns/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import Link from 'next/link';
-import { 
-  Search, 
-  Filter, 
-  Eye,
-  RefreshCw
-} from 'lucide-react';
-import { AdminReturnsService } from '@/services/admin-returns.service'; // ✅ Changed import
-import { useDebounce } from '@/hooks/useDebounce';
-import { ReturnStatusBadge } from '@/components/admin/returns/ReturnStatusBadge';
-import { DataTable } from '@/components/admin/ui/DataTable';
-import { BRAND } from '@/config/brand.config';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import Link from "next/link";
+import { Search, Filter, Eye, RefreshCw } from "lucide-react";
+import { AdminReturnsService } from "@/services/admin-returns.service"; // ✅ Changed import
+import { useDebounce } from "@/hooks/useDebounce";
+import { ReturnStatusBadge } from "@/components/admin/returns/ReturnStatusBadge";
+import { DataTable } from "@/components/admin/ui/DataTable";
+import { BRAND } from "@/config/brand.config";
 
 const STATUS_FILTERS = [
-  { value: 'ALL', label: 'All Returns' },
-  { value: 'REQUESTED', label: 'Requested' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-  { value: 'PICKUP_SCHEDULED', label: 'Pickup Scheduled' },
-  { value: 'PICKUP_COMPLETED', label: 'Pickup Completed' },
-  { value: 'RECEIVED', label: 'Received' },
-  { value: 'INSPECTED', label: 'Inspected' },
-  { value: 'CLOSED', label: 'Closed' },
+  { value: "ALL", label: "All Returns" },
+  { value: "REQUESTED", label: "Requested" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "PICKUP_SCHEDULED", label: "Pickup Scheduled" },
+  { value: "PICKUP_COMPLETED", label: "Pickup Completed" },
+  { value: "RECEIVED", label: "Received" },
+  { value: "INSPECTED", label: "Inspected" },
+  { value: "CLOSED", label: "Closed" },
 ];
 
 export default function AdminReturnsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   // app/admin/returns/page.tsx - Update the query
 
-const { data, isLoading, refetch } = useQuery({
-  queryKey: ['admin-returns', { page, search: debouncedSearch, status: statusFilter }],
-  queryFn: async () => {
-    console.log('[DEBUG] Fetching returns with params:', {
-      page,
-      limit: 20,
-      search: debouncedSearch || undefined,
-      status: statusFilter === 'ALL' ? undefined : statusFilter,
-    });
-    
-    const response = await AdminReturnsService.getReturns({
-      page,
-      limit: 20,
-      search: debouncedSearch || undefined,
-      status: statusFilter === 'ALL' ? undefined : statusFilter,
-    });
-    
-    console.log('[DEBUG] API Response from service:', response);
-    console.log('[DEBUG] Response data:', response?.data);
-    console.log('[DEBUG] Response data length:', response?.data?.length);
-    
-    return response;
-  },
-});
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: [
+      "admin-returns",
+      { page, search: debouncedSearch, status: statusFilter },
+    ],
+    queryFn: async () => {
+      const response = await AdminReturnsService.getReturns({
+        page,
+        limit: 20,
+        search: debouncedSearch || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+      });
 
-// ✅ Use the data correctly
-const returns = data?.data || [];
-const meta = data?.meta || { totalPages: 1, total: 0 };
+      return response;
+    },
+  });
 
-// ✅ Add this debug log
-console.log('[DEBUG] Returns array:', returns);
-console.log('[DEBUG] Meta:', meta);
+  // ✅ Use the data correctly
+  const returns = data?.data || [];
+  const meta = data?.meta || { totalPages: 1, total: 0 };
 
   const columns = [
     {
-      accessorKey: 'returnNumber',
-      header: 'Return',
+      accessorKey: "returnNumber",
+      header: "Return",
       cell: ({ row }: any) => (
         <Link
           href={`/admin/returns/${row.original.id}`}
@@ -84,8 +67,8 @@ console.log('[DEBUG] Meta:', meta);
       ),
     },
     {
-      accessorKey: 'order',
-      header: 'Order',
+      accessorKey: "order",
+      header: "Order",
       cell: ({ row }: any) => (
         <Link
           href={`/admin/orders/${row.original.orderId}`}
@@ -96,47 +79,50 @@ console.log('[DEBUG] Meta:', meta);
       ),
     },
     {
-      accessorKey: 'customer',
-      header: 'Customer',
+      accessorKey: "customer",
+      header: "Customer",
       cell: ({ row }: any) => (
         <div className="text-sm">
           <div className="font-medium text-gray-900">
-            {row.original.customer?.name || 'N/A'}
+            {row.original.customer?.name || "N/A"}
           </div>
           <div className="text-xs text-gray-500">
-            {row.original.customer?.email || ''}
+            {row.original.customer?.email || ""}
           </div>
         </div>
       ),
     },
     {
-      accessorKey: 'returnReason',
-      header: 'Reason',
+      accessorKey: "returnReason",
+      header: "Reason",
       cell: ({ row }: any) => (
-        <div className="text-sm text-gray-600 max-w-xs truncate" title={row.original.returnReason}>
+        <div
+          className="text-sm text-gray-600 max-w-xs truncate"
+          title={row.original.returnReason}
+        >
           {row.original.returnReason}
         </div>
       ),
     },
     {
-      accessorKey: 'returnStatus',
-      header: 'Status',
+      accessorKey: "returnStatus",
+      header: "Status",
       cell: ({ row }: any) => (
         <ReturnStatusBadge status={row.original.returnStatus} />
       ),
     },
     {
-      accessorKey: 'requestedAt',
-      header: 'Requested Date',
+      accessorKey: "requestedAt",
+      header: "Requested Date",
       cell: ({ row }: any) => (
         <div className="text-sm text-gray-600">
-          {format(new Date(row.original.requestedAt), 'MMM dd, yyyy')}
+          {format(new Date(row.original.requestedAt), "MMM dd, yyyy")}
         </div>
       ),
     },
     {
-      id: 'actions',
-      header: 'Actions',
+      id: "actions",
+      header: "Actions",
       cell: ({ row }: any) => (
         <Link
           href={`/admin/returns/${row.original.id}`}
@@ -150,7 +136,7 @@ console.log('[DEBUG] Meta:', meta);
   ];
 
   return (
-    <div 
+    <div
       className="p-6 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-300 min-h-screen"
       style={{ backgroundColor: BRAND.theme.accent }}
     >

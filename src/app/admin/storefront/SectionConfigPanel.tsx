@@ -31,7 +31,10 @@ import { CollectionsConfig } from "@/components/admin/sections/configs/Collectio
 import { CategoryStripSettings } from "@/components/admin/sections/CategoryStripSettings";
 
 // Types
-import type { CategoryIconStripSettings, ThemeSection } from "@/lib/validators/storefront";
+import type {
+  CategoryIconStripSettings,
+  ThemeSection,
+} from "@/lib/validators/storefront";
 import { FeaturedProductsConfig } from "@/components/admin/sections/configs/FeaturedProductsConfig";
 
 // ============================================================
@@ -153,7 +156,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     queryFn: async () => {
       try {
         const res: any = await apiClient.get(
-          `/admin/collections?t=${Date.now()}`
+          `/admin/collections?t=${Date.now()}`,
         );
         if (Array.isArray(res)) return res;
         if (res?.data && Array.isArray(res.data)) return res.data;
@@ -177,7 +180,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     queryFn: async () => {
       try {
         const res: any = await apiClient.get(
-          `/admin/categories?t=${Date.now()}`
+          `/admin/categories?t=${Date.now()}`,
         );
         if (Array.isArray(res)) return res;
         if (res?.data && Array.isArray(res.data)) return res.data;
@@ -194,7 +197,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
   // Transform categories to the format expected by CategorySelector
   const transformedCategories: Category[] = useMemo(() => {
     if (!categoriesData || !Array.isArray(categoriesData)) return [];
-    
+
     return categoriesData.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
@@ -215,7 +218,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
       updateSectionSettings(activeSection.id, settings);
       onUpdate?.();
     },
-    [activeSection, updateSectionSettings, onUpdate]
+    [activeSection, updateSectionSettings, onUpdate],
   );
 
   // ============================================================
@@ -268,14 +271,6 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
       ...defaultSettings,
       ...activeSection.settings,
     };
-
-    // Debug: Log categories data
-    console.log('SectionConfigPanel - Categories:', {
-      needsCategoriesData,
-      categoriesData: categoriesData?.length || 0,
-      transformedCategories: transformedCategories.length,
-      isLoadingCategories,
-    });
 
     return (
       <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300">

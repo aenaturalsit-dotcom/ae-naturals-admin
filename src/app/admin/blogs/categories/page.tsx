@@ -1,12 +1,12 @@
 // src\app\admin\blogs\categories\page.tsx
-'use client';
+"use client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminCategoryService } from '@/services/admin-category.service';
-import { Trash2, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-import { ConfirmDeleteModal } from '@/components/admin/ConfirmDeleteModal';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { adminCategoryService } from "@/services/admin-category.service";
+import { Trash2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { ConfirmDeleteModal } from "@/components/admin/ConfirmDeleteModal";
 
 export default function CategoryPage() {
   const queryClient = useQueryClient();
@@ -16,36 +16,31 @@ export default function CategoryPage() {
     name: string;
   } | null>(null);
 
-  console.log("STATE categoryToDelete:", categoryToDelete);
-
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['admin-categories'],
+    queryKey: ["admin-categories"],
     queryFn: async () => {
       const res = await adminCategoryService.getCategories();
       return Array.isArray(res) ? res : res?.data || [];
-    }
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log("🔥 DELETE API CALLED:", id);
       return adminCategoryService.deleteCategory(id);
     },
     onSuccess: () => {
-      console.log("✅ DELETE SUCCESS");
       toast.success("Deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
       setCategoryToDelete(null);
     },
     onError: (err) => {
       console.log("❌ DELETE ERROR:", err);
       toast.error("Delete failed");
-    }
+    },
   });
 
   const handleDeleteClick = (e: React.MouseEvent, cat: any) => {
     e.stopPropagation();
-    console.log("🟡 DELETE CLICKED:", cat);
     setCategoryToDelete({ id: cat.id, name: cat.name });
   };
 
@@ -59,7 +54,6 @@ export default function CategoryPage() {
 
   return (
     <div className="p-8">
-
       <h1 className="text-xl font-bold mb-4">Categories</h1>
 
       <table className="w-full border">
@@ -86,11 +80,9 @@ export default function CategoryPage() {
       <ConfirmDeleteModal
         isOpen={!!categoryToDelete}
         onClose={() => {
-          console.log("🔵 MODAL CLOSED");
           setCategoryToDelete(null);
         }}
         onConfirm={() => {
-          console.log("🔴 CONFIRM TRIGGERED");
           if (categoryToDelete) {
             deleteMutation.mutate(categoryToDelete.id);
           }
@@ -99,7 +91,6 @@ export default function CategoryPage() {
         message={`Are you sure you want to delete "${categoryToDelete?.name}"?`}
         isLoading={deleteMutation.isPending}
       />
-
     </div>
   );
 }

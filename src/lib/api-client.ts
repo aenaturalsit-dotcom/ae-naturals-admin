@@ -1,5 +1,9 @@
 // src/lib/api-client.ts
-import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
 import { signOut } from "next-auth/react";
 import { useAuthStore } from "../store/authStore";
 
@@ -9,8 +13,7 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 // 🐛 DEBUG LOGGER
 const debugLog = (msg: string) => {
-  const time = new Date().toISOString().split('T')[1].slice(0, -1); // e.g. 14:32:01.123
-  console.log(`[${time}] 🔐 AUTH_INTERCEPTOR: ${msg}`);
+  const time = new Date().toISOString().split("T")[1].slice(0, -1); // e.g. 14:32:01.123
 };
 
 let isRefreshing = false;
@@ -19,7 +22,10 @@ let failedQueue: Array<{
   reject: (reason?: any) => void;
 }> = [];
 
-const processQueue = (error: AxiosError | null, token: string | null = null) => {
+const processQueue = (
+  error: AxiosError | null,
+  token: string | null = null,
+) => {
   // debugLog(`Processing queued requests. Queue size: ${failedQueue.length}`);
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
@@ -43,7 +49,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error: AxiosError) => Promise.reject(error)
+  (error: AxiosError) => Promise.reject(error),
 );
 
 apiClient.interceptors.response.use(
@@ -53,9 +59,13 @@ apiClient.interceptors.response.use(
     const url = originalRequest.url;
 
     // Detect 401 Unauthorized
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
       // debugLog(`Caught 401 Unauthorized for -> ${url}`);
-      
+
       if (isRefreshing) {
         // debugLog(`Refresh already in progress. Queuing request for -> ${url}`);
         return new Promise((resolve, reject) => {
@@ -79,9 +89,9 @@ apiClient.interceptors.response.use(
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
-        
+
         const newToken = res.data.access_token;
         // debugLog(`✅ Refresh SUCCESS! New Token: ...${newToken.slice(-10)}`);
 
@@ -90,18 +100,17 @@ apiClient.interceptors.response.use(
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
         }
-        
+
         processQueue(null, newToken);
         // debugLog(`Replaying original request -> ${url}`);
         return await apiClient(originalRequest);
-        
       } catch (refreshError: any) {
         debugLog(`❌ Refresh FAILED: ${refreshError.message}. Logging out.`);
         processQueue(refreshError, null);
-        
+
         useAuthStore.getState().logout();
-        await signOut({ callbackUrl: '/admin/login' });
-        
+        await signOut({ callbackUrl: "/admin/login" });
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -110,7 +119,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
@@ -120,11 +129,29 @@ declare module "axios" {
   export interface AxiosInstance {
     request<T = any, R = T>(config: AxiosRequestConfig): Promise<R>;
     get<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
-    delete<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
+    delete<T = any, R = T>(
+      url: string,
+      config?: AxiosRequestConfig,
+    ): Promise<R>;
     head<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
-    options<T = any, R = T>(url: string, config?: AxiosRequestConfig): Promise<R>;
-    post<T = any, R = T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R>;
-    put<T = any, R = T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R>;
-    patch<T = any, R = T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R>;
+    options<T = any, R = T>(
+      url: string,
+      config?: AxiosRequestConfig,
+    ): Promise<R>;
+    post<T = any, R = T>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<R>;
+    put<T = any, R = T>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<R>;
+    patch<T = any, R = T>(
+      url: string,
+      data?: any,
+      config?: AxiosRequestConfig,
+    ): Promise<R>;
   }
 }

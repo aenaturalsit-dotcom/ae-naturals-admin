@@ -25,11 +25,6 @@ function log(scope: string, message: string, data?: any) {
   if (!DEBUG) return;
   const prefix = `%c[CollectionEditor::${scope}]`;
   const style = "color: #006044; font-weight: bold;";
-  if (data !== undefined) {
-    console.log(prefix, style, message, data);
-  } else {
-    console.log(prefix, style, message);
-  }
 }
 
 function logError(scope: string, message: string, error?: any) {
