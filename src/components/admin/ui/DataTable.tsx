@@ -1,8 +1,8 @@
-// src\components\admin\ui\DataTable.tsx
+// components/admin/ui/DataTable.tsx
 
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   ColumnDef,
@@ -19,6 +19,8 @@ interface DataTableProps<TData, TValue> {
   totalItems: number;
   isLoading?: boolean;
   noBorder?: boolean;
+  onPageChange?: (page: number) => void;
+  currentPage?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -28,35 +30,69 @@ export function DataTable<TData, TValue>({
   totalItems,
   isLoading = false,
   noBorder = false,
+  onPageChange,
+  currentPage: externalPage,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Extract current page from URL
-  const currentPage = Number(searchParams.get("page")) || 1;
+  // Use external page if provided, otherwise from URL
+  // const currentPage = externalPage ?? Number(searchParams.get("page")) || 1;
+  const currentPage = externalPage ?? (Number(searchParams.get("page")) || 1);
+
+
+  // Debug log to see what's being passed
+  useEffect(() => {
+    console.log("📊 DataTable Debug:", {
+      dataLength: data?.length || 0,
+      pageCount,
+      totalItems,
+      currentPage,
+      isLoading,
+      hasData: data && data.length > 0,
+    });
+  }, [data, pageCount, totalItems, currentPage, isLoading]);
 
   const table = useReactTable({
-    data,
+    data: data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    pageCount: pageCount,
+    pageCount: pageCount || 1,
   });
 
-  // URL-driven pagination
+  // URL-driven pagination with optional callback
   const handlePageChange = useCallback(
     (newPage: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("page", newPage.toString());
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      if (onPageChange) {
+        onPageChange(newPage);
+      } else {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", newPage.toString());
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      }
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams, onPageChange]
   );
+
+  // If no data and not loading, show empty state
+  if (!isLoading && (!data || data.length === 0)) {
+    return (
+      <div className={`bg-white overflow-hidden ${noBorder ? '' : 'rounded-xl border border-gray-200 shadow-sm'}`}>
+        <div className="p-12 text-center">
+          <p className="text-gray-500 font-medium">No results found.</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Try adjusting your search or filter criteria
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-{/* Conditionally apply border/shadow */}
+      {/* Conditionally apply border/shadow */}
       <div className={`bg-white overflow-hidden ${noBorder ? '' : 'rounded-xl border border-gray-200 shadow-sm'}`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-600">
@@ -113,31 +149,35 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex items-center justify-between px-2">
-        <p className="text-sm text-gray-500 font-medium">
-          Showing <span className="font-bold text-gray-900">{data.length}</span> of{" "}
-          <span className="font-bold text-gray-900">{totalItems}</span> results
-        </p>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1 || isLoading}
-            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-bold text-gray-900 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
-            Page {currentPage} of {pageCount || 1}
-          </span>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === pageCount || isLoading || pageCount === 0}
-            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+      {totalItems > 0 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Showing <span className="font-bold text-gray-900">{data.length}</span> of{" "}
+            <span className="font-bold text-gray-900">{totalItems}</span> results
+          </p>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || isLoading}
+              className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-bold text-gray-900 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              Page {currentPage} of {pageCount || 1}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === pageCount || isLoading || pageCount === 0}
+              className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

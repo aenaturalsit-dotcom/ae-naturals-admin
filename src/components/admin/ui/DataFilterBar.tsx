@@ -1,143 +1,157 @@
-// src/components/admin/ui/DataFilterBar.tsx
+// components/admin/ui/DataFilterBar.tsx
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, X, Filter, ChevronDown } from "lucide-react";
+import { Search, Download, X } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
-import { cn } from "@/lib/utils"; // Import your utility
-
-interface FilterOption {
-  label: string;
-  value: string;
-}
 
 interface DataFilterBarProps {
   searchPlaceholder?: string;
-  statusOptions?: FilterOption[];
+  statusOptions?: { label: string; value: string }[];
+  paymentStatusOptions?: { label: string; value: string }[];
   onExport?: () => void;
 }
 
-export function DataFilterBar({
+export const DataFilterBar: React.FC<DataFilterBarProps> = ({
   searchPlaceholder = "Search...",
   statusOptions = [],
+  paymentStatusOptions = [],
   onExport,
-}: DataFilterBarProps) {
+}) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState(
-    searchParams.get("search") || ""
-  );
+  // Get current values from URL
+  const currentSearch = useMemo(() => searchParams.get("search") || "", [searchParams]);
+  const currentStatus = useMemo(() => searchParams.get("status") || "", [searchParams]);
+  const currentPaymentStatus = useMemo(() => searchParams.get("paymentStatus") || "", [searchParams]);
+
+  // Local state
+  const [searchTerm, setSearchTerm] = useState(currentSearch);
   const debouncedSearch = useDebounce(searchTerm, 500);
 
+  // Sync search to URL - only when debounced value changes
   useEffect(() => {
-    const currentSearchInUrl = searchParams.get("search") || "";
-
-    if (debouncedSearch !== currentSearchInUrl) {
-      const params = new URLSearchParams(searchParams.toString());
-      if (debouncedSearch) {
-        params.set("search", debouncedSearch);
-        params.set("page", "1");
-      } else {
-        params.delete("search");
-      }
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    }
-  }, [debouncedSearch, pathname, router, searchParams]);
-
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (debouncedSearch === currentSearch) return;
+    
     const params = new URLSearchParams(searchParams.toString());
-    if (e.target.value) {
-      params.set("status", e.target.value);
-      params.set("page", "1");
+    if (debouncedSearch) {
+      params.set("search", debouncedSearch);
+    } else {
+      params.delete("search");
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [debouncedSearch, currentSearch, pathname, router, searchParams]);
+
+  const handleStatusChange = useCallback((value: string) => {
+    if (value === currentStatus) return;
+    
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set("status", value);
     } else {
       params.delete("status");
     }
+    params.set("page", "1");
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+  }, [currentStatus, pathname, router, searchParams]);
 
-  const currentStatus = searchParams.get("status") || "";
+  const handlePaymentStatusChange = useCallback((value: string) => {
+    if (value === currentPaymentStatus) return;
+    
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set("paymentStatus", value);
+    } else {
+      params.delete("paymentStatus");
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [currentPaymentStatus, pathname, router, searchParams]);
+
+  const clearFilters = useCallback(() => {
+    router.push(pathname, { scroll: false });
+    setSearchTerm("");
+  }, [pathname, router]);
+
+  const hasFilters = currentSearch || currentStatus || currentPaymentStatus;
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-80">
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="w-4 h-4 text-gray-400 shrink-0" />
-          </span>
-
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            // Use cn() or a single line string to avoid whitespace mismatches
-            className={cn(
-              "w-full h-10 pl-9 pr-9 bg-white border border-gray-200 rounded-xl",
-              "text-sm text-gray-800 placeholder:text-gray-400 shadow-sm",
-              "focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none transition-all"
-            )}
+            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#217A6E] focus:border-transparent outline-none transition-all"
+            aria-label="Search"
           />
-
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => setSearchTerm("")}
-              aria-label="Clear search"
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-4 h-4 shrink-0" />
-            </button>
-          )}
         </div>
 
-        {/* Status Dropdown */}
+        {/* Status Filter */}
         {statusOptions.length > 0 && (
-          <div className="relative shrink-0">
-            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-            </span>
+          <select
+            value={currentStatus}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#217A6E] focus:border-transparent outline-none min-w-[140px]"
+            aria-label="Filter by status"
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
-            <select
-              value={currentStatus}
-              onChange={handleStatusChange}
-              // Formatted as a clean string to prevent hydration errors
-              className={cn(
-                "appearance-none h-10 pl-9 pr-8 bg-white border border-gray-200 rounded-xl",
-                "text-sm font-medium text-gray-700 shadow-sm",
-                "focus:ring-2 focus:ring-[#217A6E] focus:border-[#217A6E] outline-none cursor-pointer transition-all"
-              )}
-            >
-              <option value="">All Statuses</option>
-              {statusOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+        {/* Payment Status Filter */}
+        {paymentStatusOptions.length > 0 && (
+          <select
+            value={currentPaymentStatus}
+            onChange={(e) => handlePaymentStatusChange(e.target.value)}
+            className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#217A6E] focus:border-transparent outline-none min-w-[140px]"
+            aria-label="Filter by payment status"
+          >
+            {paymentStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
-            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
-              <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-            </span>
-          </div>
+        {/* Clear Filters */}
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Clear all filters"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        )}
+
+        {/* Export Button */}
+        {onExport && (
+          <button
+            onClick={onExport}
+            className="flex items-center gap-2 px-4 py-2 bg-[#217A6E] text-white text-sm font-medium rounded-lg hover:bg-[#004d36] transition-colors ml-auto"
+            aria-label="Export orders"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
         )}
       </div>
-
-      {/* Right: Export */}
-      {onExport && (
-        <button
-          type="button"
-          onClick={onExport}
-          className="w-full sm:w-auto h-10 px-5 bg-gray-900 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-gray-800 transition-colors"
-        >
-          Export CSV
-        </button>
-      )}
     </div>
   );
-}
+};

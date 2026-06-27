@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { OrderStatus } from "@/types/types";
+import type { OrderStatus } from "@/types/orders";
 import apiClient from "@/lib/api-client";
 import CancelOrderModal from "../CancelOrderModal";
 import { Package, MapPin, Loader2, User, Phone, Mail } from "lucide-react";
 import { resolveFirstProductImage } from "@/shared/utils/media-normalization";
 
 const ORDER_TRANSITIONS: Record<string, OrderStatus[]> = {
-  PENDING: [OrderStatus.PAID, OrderStatus.CANCELLED],
-  PAID: [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-  PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-  SHIPPED: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
-  DELIVERED: [OrderStatus.RETURNED],
+  PENDING: ["PAID", "CANCELLED"],
+  PAID: ["PROCESSING", "SHIPPED", "CANCELLED"],
+  PROCESSING: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED", "RETURNED"],
+  DELIVERED: ["RETURNED"],
   CANCELLED: [],
   RETURNED: [],
 };
@@ -36,7 +36,7 @@ export default function OrderDetails({ order, onUpdate }: OrderDetailsProps) {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   // Derive state directly from the prop to avoid React sync issues
-  const currentStatus = order.status || OrderStatus.PENDING;
+  const currentStatus = order.status || 'PENDING';
   const availableActions = ORDER_TRANSITIONS[currentStatus] || [];
   const hasAddress = order.addressSnapshot && order.addressSnapshot.name;
 

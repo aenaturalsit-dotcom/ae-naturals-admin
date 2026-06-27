@@ -1,14 +1,13 @@
-"use client";
+// app/admin/orders/columns.tsx
 
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { format } from "date-fns";
+import { Order } from "@/types/orders";
+import { OrderStatusBadge } from "@/components/admin/ui/OrderStatusBadge";
+import { PaymentStatusBadge } from "@/components/admin/ui/PaymentStatusBadge";
 
-export const orderColumns: ColumnDef<any>[] = [
-  {
-    id: "select",
-    // Checkbox injected dynamically in page.tsx
-  },
+export const orderColumns: ColumnDef<Order>[] = [
   {
     accessorKey: "id",
     header: "Order",
@@ -17,7 +16,7 @@ export const orderColumns: ColumnDef<any>[] = [
         href={`/admin/orders/${row.original.id}`}
         className="font-semibold text-gray-900 hover:underline"
       >
-        #{row.original.id.slice(-4).toUpperCase()}
+        #{row.original.id.slice(-6).toUpperCase()}
       </Link>
     ),
   },
@@ -26,154 +25,75 @@ export const orderColumns: ColumnDef<any>[] = [
     header: "Date",
     cell: ({ row }) => (
       <div className="text-sm text-gray-500 whitespace-nowrap">
-        {format(new Date(row.original.createdAt), "MMM dd 'at' h:mm a")}
+        {format(new Date(row.original.createdAt), "MMM dd, yyyy")}
+        <div className="text-xs text-gray-400">
+          {format(new Date(row.original.createdAt), "h:mm a")}
+        </div>
       </div>
     ),
   },
   {
     id: "customer",
     header: "Customer",
-    cell: ({ row }) => {
-      // Safely access user details based on your JSON structure
-      const name = row.original.user?.name || "No name";
-      return <div className="text-sm font-medium text-gray-900">{name}</div>;
-    },
+    cell: ({ row }) => (
+      <div>
+        <div className="text-sm font-medium text-gray-900">
+          {row.original.user?.name || "Guest"}
+        </div>
+        <div className="text-xs text-gray-500">
+          {row.original.user?.email || ""}
+        </div>
+      </div>
+    ),
   },
   {
     accessorKey: "totalAmount",
     header: "Total",
     cell: ({ row }) => (
-      <span className="text-sm text-gray-600">
-        Rs.{" "}
-        {row.original.totalAmount?.toLocaleString("en-IN", {
+      <span className="text-sm font-medium text-gray-900">
+        ₹{row.original.totalAmount?.toLocaleString("en-IN", {
           minimumFractionDigits: 2,
         })}
       </span>
     ),
   },
   {
-  id: "paymentStatus",
-  header: "Payment Status",
-  cell: ({ row }) => {
-    const paymentStatus = row.original.paymentStatus;
-    const paymentProvider = row.original.paymentProvider;
-    const orderStatus = row.original.status;
-
-    let badgeClass = "bg-gray-100 text-gray-800";
-    let label = paymentStatus;
-
-    // COD-specific display
-    if (paymentProvider === "COD") {
-      if (
-        paymentStatus === "PAID" ||
-        orderStatus === "DELIVERED"
-      ) {
-        badgeClass = "bg-green-100 text-green-800";
-        label = "COD Received";
-      } else {
-        badgeClass = "bg-blue-100 text-blue-800";
-        label = "COD Pending";
-      }
-    } else {
-      switch (paymentStatus) {
-        case "PAID":
-          badgeClass = "bg-green-100 text-green-800";
-          label = "Paid";
-          break;
-
-        case "PENDING":
-          badgeClass = "bg-amber-100 text-amber-800";
-          label = "Pending";
-          break;
-
-        case "FAILED":
-          badgeClass = "bg-red-100 text-red-800";
-          label = "Failed";
-          break;
-
-        case "REFUNDED":
-          badgeClass = "bg-purple-100 text-purple-800";
-          label = "Refunded";
-          break;
-
-        case "PARTIALLY_REFUNDED":
-          badgeClass = "bg-purple-100 text-purple-800";
-          label = "Partially Refunded";
-          break;
-      }
-    }
-
-    return (
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}
-      >
-        {paymentStatus === "PAID" && (
-          <svg
-            className="w-3 h-3 mr-1 text-emerald-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-
-        {paymentStatus === "PENDING" && (
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
-        )}
-
-        {label}
-      </span>
-    );
+    id: "status",
+    header: "Order Status",
+    cell: ({ row }) => (
+      <OrderStatusBadge status={row.original.status} size="sm" />
+    ),
   },
-},
   {
-    id: "fulfillmentStatus",
-    header: "Fulfillment status",
+    id: "paymentStatus",
+    header: "Payment",
     cell: ({ row }) => {
-      const status = row.original.status;
-
-      const isFulfilled = status === "SHIPPED" || status === "DELIVERED";
-      const isUnfulfilled = !isFulfilled && status !== "CANCELLED";
-
-      let badgeClass = "bg-amber-100 text-amber-800"; // Default Unfulfilled
-      let label = isFulfilled
-        ? "Fulfilled"
-        : isUnfulfilled
-          ? "Unfulfilled"
-          : "Restocked";
-
-      if (isFulfilled) {
-        badgeClass = "bg-gray-100 text-gray-800";
-      } else if (status === "CANCELLED" || status === "RETURNED") {
-        badgeClass = "bg-gray-100 text-gray-500";
+      const { paymentStatus, paymentProvider } = row.original;
+      
+      // Special handling for COD
+      if (paymentProvider === "COD") {
+        if (paymentStatus === "PAID") {
+          return <PaymentStatusBadge status="PAID" size="sm" />;
+        }
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            COD Pending
+          </span>
+        );
       }
-
-      return (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}
-        >
-          {isUnfulfilled && (
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
-          )}
-          {label}
-        </span>
-      );
+      
+      return <PaymentStatusBadge status={paymentStatus} size="sm" />;
     },
   },
   {
     id: "items",
     header: "Items",
     cell: ({ row }) => {
-      // 🔥 FIX: Read from the Prisma _count relation output from your JSON
-      const itemCount =
-        row.original._count?.items || row.original.items?.length || 0;
+      const count = row.original._count?.items || 0;
       return (
         <span className="text-sm text-gray-600">
-          {itemCount} {itemCount === 1 ? "item" : "items"}
+          {count} {count === 1 ? "item" : "items"}
         </span>
       );
     },
