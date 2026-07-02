@@ -149,7 +149,9 @@ useEffect(() => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await adminFooterService.upsertFooter({ storeId: 'default-store', columns });
+      await adminFooterService.upsertFooter({
+    columns
+});
       toast.success("Footer layout saved!");
     } catch (error) {
       toast.error("Save failed");

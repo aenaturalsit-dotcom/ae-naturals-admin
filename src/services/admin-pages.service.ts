@@ -5,10 +5,10 @@ export const adminPagesService = {
   /**
    * Fetch all pages for the admin table (includes drafts)
    */
-  getAllPages: async (storeId: string = 'default-store') => {
-    const response = await apiClient.get(`/admin/pages/store/${storeId}`);
-    return response.data || response;
-  },
+  getAllPages: async () => {
+  const response = await apiClient.get('/admin/pages');
+  return response.data || response;
+},
 
   /**
    * Fetch a single page by slug to populate the editor

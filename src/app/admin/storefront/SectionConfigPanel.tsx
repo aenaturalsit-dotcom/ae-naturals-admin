@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useStorefrontStore } from "@/store/useStorefrontStore";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api-client";
@@ -54,6 +54,13 @@ interface Category {
   image?: string | null;
 }
 
+interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+}
+
 // ============================================================
 // 2. SECTION CONFIG REGISTRY
 // ============================================================
@@ -62,7 +69,7 @@ interface SectionConfig {
   component: React.ComponentType<any>;
   label: string;
   needsCollections?: boolean;
-  needsCategories?: boolean; // NEW: Flag for categories
+  needsCategories?: boolean;
 }
 
 const SECTION_CONFIG_REGISTRY: Record<string, SectionConfig> = {
@@ -113,7 +120,8 @@ const SECTION_CONFIG_REGISTRY: Record<string, SectionConfig> = {
   CATEGORY_ICON_STRIP: {
     component: CategoryStripSettings,
     label: "Category Icon Strip",
-    needsCategories: true, // ✅ NEW: This section needs categories
+    needsCategories: true,
+    needsCollections: true, // ✅ ADD THIS - Collections are needed
   },
 };
 
@@ -126,28 +134,34 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     useStorefrontStore();
 
   const activeSection = sections.find((s) => s.id === activeSectionId);
+  
+  const [localSettings, setLocalSettings] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (activeSection) {
+      setLocalSettings(activeSection.settings || {});
+    }
+  }, [activeSection]);
 
   // ============================================================
   // 4. DATA FETCHING
   // ============================================================
 
-  // Check if we need collections data
   const needsCollectionsData = useMemo(() => {
     if (!activeSection) return false;
     const config = SECTION_CONFIG_REGISTRY[activeSection.type];
     return config?.needsCollections || false;
   }, [activeSection]);
 
-  // Check if we need categories data
   const needsCategoriesData = useMemo(() => {
     if (!activeSection) return false;
     const config = SECTION_CONFIG_REGISTRY[activeSection.type];
     return config?.needsCategories || false;
   }, [activeSection]);
 
-  // Fetch collections
+  // ✅ FETCH COLLECTIONS
   const {
-    data: collections,
+    data: collectionsData = [],
     isLoading: isLoadingCollections,
     isFetching: isFetchingCollections,
     refetch: refetchCollections,
@@ -155,23 +169,26 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     queryKey: ["builder-collections", activeSection?.id],
     queryFn: async () => {
       try {
+        console.log("📡 Fetching collections...");
         const res: any = await apiClient.get(
           `/admin/collections?t=${Date.now()}`,
         );
-        if (Array.isArray(res)) return res;
-        if (res?.data && Array.isArray(res.data)) return res.data;
-        return [];
+        const data = Array.isArray(res) ? res : res?.data || [];
+        console.log(`✅ Fetched ${data.length} collections:`, data.slice(0, 3));
+        return data;
       } catch (error) {
-        console.error("Failed to fetch collections:", error);
+        console.error("❌ Failed to fetch collections:", error);
         return [];
       }
     },
     enabled: !!activeSection && needsCollectionsData,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // ✅ NEW: Fetch categories
+  // ✅ FETCH CATEGORIES
   const {
-    data: categoriesData,
+    data: categoriesData = [],
     isLoading: isLoadingCategories,
     isFetching: isFetchingCategories,
     refetch: refetchCategories,
@@ -179,25 +196,26 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     queryKey: ["builder-categories", activeSection?.id],
     queryFn: async () => {
       try {
+        console.log("📡 Fetching categories...");
         const res: any = await apiClient.get(
           `/admin/categories?t=${Date.now()}`,
         );
-        if (Array.isArray(res)) return res;
-        if (res?.data && Array.isArray(res.data)) return res.data;
-        return [];
+        const data = Array.isArray(res) ? res : res?.data || [];
+        console.log(`✅ Fetched ${data.length} categories:`, data.slice(0, 3));
+        return data;
       } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        console.error("❌ Failed to fetch categories:", error);
         return [];
       }
     },
     enabled: !!activeSection && needsCategoriesData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Transform categories to the format expected by CategorySelector
+  // Transform categories
   const transformedCategories: Category[] = useMemo(() => {
     if (!categoriesData || !Array.isArray(categoriesData)) return [];
-
     return categoriesData.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
@@ -208,6 +226,17 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
     }));
   }, [categoriesData]);
 
+  // ✅ Transform collections
+  const transformedCollections: Collection[] = useMemo(() => {
+    if (!collectionsData || !Array.isArray(collectionsData)) return [];
+    return collectionsData.map((col: any) => ({
+      id: col.id,
+      name: col.name,
+      slug: col.slug,
+      image: col.image || null,
+    }));
+  }, [collectionsData]);
+
   // ============================================================
   // 5. HANDLERS
   // ============================================================
@@ -215,8 +244,18 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
   const handleUpdate = useCallback(
     (settings: Record<string, any>) => {
       if (!activeSection) return;
+      
+      setLocalSettings(settings);
       updateSectionSettings(activeSection.id, settings);
-      onUpdate?.();
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      console.log("📝 Settings updated:", {
+        sectionId: activeSection.id,
+        settings,
+      });
     },
     [activeSection, updateSectionSettings, onUpdate],
   );
@@ -252,28 +291,37 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
   // 8. SPECIAL CASE: CATEGORY ICON STRIP
   // ============================================================
   if (activeSection.type === "CATEGORY_ICON_STRIP") {
-    // Ensure settings have all required fields with defaults
-    const defaultSettings: CategoryIconStripSettings = {
+    const defaultSettings = {
       title: "Shop by Category",
       subtitle: "",
-      categoryIds: [],
+      items: [],
       displayCount: 12,
-      layout: "grid",
+      layout: "scrollable",
       columns: "5",
       showProductCount: true,
       imageSize: "medium",
       showCategoryNames: true,
       imageShape: "circle",
+      _legacy: false,
+      _legacyCategoryIds: [],
     };
 
-    // Merge existing settings with defaults
-    const mergedSettings: CategoryIconStripSettings = {
-      ...defaultSettings,
-      ...activeSection.settings,
-    };
+    const currentSettings = localSettings || activeSection.settings || {};
+    const mergedSettings = { ...defaultSettings, ...currentSettings };
+
+    if (!mergedSettings.items || !Array.isArray(mergedSettings.items)) {
+      mergedSettings.items = [];
+    }
+
+    // ✅ Log what we're passing
+    console.log("📦 CategoryStripSettings props:", {
+      categoriesCount: transformedCategories.length,
+      collectionsCount: transformedCollections.length,
+      itemsCount: mergedSettings.items?.length || 0,
+    });
 
     return (
-      <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300">
+      <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300 overflow-y-auto max-h-full">
         <div>
           <h3 className="text-2xl font-black text-zinc-900 tracking-tight">
             Category Icon Strip
@@ -281,6 +329,20 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em] mt-1">
             Block Configuration
           </p>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-zinc-500">
+              {mergedSettings.items?.length || 0} items configured
+            </span>
+            <span className="text-xs text-green-600">
+              {transformedCategories.length} categories available
+            </span>
+            <span className="text-xs text-blue-600">
+              {transformedCollections.length} collections available
+            </span>
+            {isLoadingCategories || isLoadingCollections ? (
+              <span className="text-xs text-blue-500 animate-pulse">Loading...</span>
+            ) : null}
+          </div>
         </div>
 
         <CategoryStripSettings
@@ -288,7 +350,9 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
           settings={mergedSettings}
           onUpdate={handleUpdate}
           categories={transformedCategories}
-          isLoadingCategories={isLoadingCategories}
+          collections={transformedCollections} // ✅ PASS COLLECTIONS
+          isLoadingCategories={isLoadingCategories || isLoadingCollections}
+          onRefreshPreview={onUpdate}
         />
       </div>
     );
@@ -300,7 +364,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
   const ConfigComponent = config.component;
 
   return (
-    <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300">
+    <div className="p-8 space-y-8 animate-in slide-in-from-right-4 duration-300 overflow-y-auto max-h-full">
       <div>
         <h3 className="text-2xl font-black text-zinc-900 tracking-tight">
           {activeSection.type.replace("_", " ")}
@@ -312,7 +376,7 @@ export function SectionConfigPanel({ onUpdate }: SectionConfigPanelProps) {
 
       <ConfigComponent
         section={activeSection}
-        collections={collections || []}
+        collections={collectionsData || []}
         isLoadingCollections={isLoadingCollections}
         isFetching={isFetchingCollections}
         onUpdate={handleUpdate}

@@ -154,18 +154,35 @@ const WhatsAppWidgetSettingsSchema = z.object({
   showOnMobile: z.boolean().optional().default(true),
 });
 
+const CategoryIconStripItemSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(["category", "collection", "custom-link"]),
+  targetId: z.string().min(1),
+  isEnabled: z.boolean().default(true),
+  title: z.string().optional().default(""),
+  imageUrl: z.string().url().optional().nullable().default(null),
+  badge: z.enum(["new", "sale", "trending", "hot"]).optional().nullable().default(null),
+  order: z.number().min(0).default(0),
+  customLinkConfig: z.object({
+    url: z.string().min(1),
+    openInNewTab: z.boolean().default(false),
+  }).optional(),
+});
+
 // 2.11 CATEGORY ICON STRIP
 const CategoryIconStripSettingsSchema = z.object({
   title: z.string().optional().nullable().default("Shop by Category"),
   subtitle: z.string().optional().nullable().default(""),
-  categoryIds: z.array(z.string()).default([]),
-  displayCount: z.number().min(1).max(20).optional().default(12),
-  layout: z.enum(["grid", "scrollable"]).optional().default("grid"),
+  items: z.array(CategoryIconStripItemSchema).default([]),
+  displayCount: z.number().min(1).max(50).optional().default(12),
+  layout: z.enum(["grid", "scrollable"]).optional().default("scrollable"),
   columns: z.enum(["4", "5", "6"]).optional().default("5"),
   showProductCount: z.boolean().optional().default(true),
   imageSize: z.enum(["small", "medium", "large"]).optional().default("medium"),
   showCategoryNames: z.boolean().optional().default(true),
   imageShape: z.enum(["circle", "square", "rounded"]).optional().default("circle"),
+  _legacy: z.boolean().optional().default(false),
+  _legacyCategoryIds: z.array(z.string()).optional().default([]),
 });
 
 // ============================================================
@@ -227,6 +244,7 @@ export type BlogSectionSettings = z.infer<typeof BlogSectionSettingsSchema>;
 export type VideoShoppableSettings = z.infer<typeof VideoShoppableSettingsSchema>;
 export type WhatsAppWidgetSettings = z.infer<typeof WhatsAppWidgetSettingsSchema>;
 export type CategoryIconStripSettings = z.infer<typeof CategoryIconStripSettingsSchema>;
+export type CategoryIconStripItem = z.infer<typeof CategoryIconStripItemSchema>;
 
 // Nested types
 export type HeroSlide = z.infer<typeof HeroSlideSchema>;
@@ -511,3 +529,24 @@ export type Section = ThemeSection;
  * @deprecated Use StorefrontLayout instead
  */
 export type Layout = StorefrontLayout;
+
+// Helper to migrate legacy settings
+export function migrateCategoryIconStripSettings(settings: any): CategoryIconStripSettings {
+  if (settings.items && settings.items.length > 0) return settings;
+  
+  if (settings.categoryIds && settings.categoryIds.length > 0) {
+    const items = settings.categoryIds.map((id: string, index: number) => ({
+      id: `item-${Date.now()}-${index}`,
+      type: "category" as const,
+      targetId: id,
+      isEnabled: true,
+      title: "",
+      imageUrl: null,
+      badge: null,
+      order: index,
+    }));
+    return { ...settings, items, _legacy: true, _legacyCategoryIds: settings.categoryIds };
+  }
+  
+  return { ...settings, items: [], _legacy: false, _legacyCategoryIds: [] };
+}
