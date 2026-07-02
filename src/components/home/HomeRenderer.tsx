@@ -144,10 +144,17 @@ const SECTION_REGISTRY: Record<string, SectionRegistryItem> = {
     component: CategoryIconStrip,
     displayName: "Category Icon Strip",
     dataResolver: (section, data) => {
-      // ✅ Ensure categories data is properly passed
+      // ✅ FIX: Properly pass categories data
       const categories = data?.categories || [];
-
-      // Return the entire data object with categories
+      
+      // Log for debugging
+      console.log("📦 CategoryIconStrip Data Resolver:", {
+        categoriesCount: categories.length,
+        categories: categories.slice(0, 3).map((c: any) => ({ id: c.id, name: c.name })),
+        sectionSettings: section.settings,
+      });
+      
+      // Return the data with categories
       return {
         ...data,
         categories: categories,
@@ -304,6 +311,18 @@ export default function HomeRenderer({
     if (!config?.sectionsOrder) return [];
     return config.sectionsOrder.filter((section) => section.isActive !== false);
   }, [config?.sectionsOrder]);
+
+  // Log data for debugging
+  useMemo(() => {
+    if (previewMode) {
+      console.log("🏠 HomeRenderer Data:", {
+        categoriesCount: data?.categories?.length || 0,
+        collectionsCount: data?.collections?.length || 0,
+        sectionsCount: activeSections.length,
+        categoryStripSection: activeSections.find((s) => s.type === "CATEGORY_ICON_STRIP"),
+      });
+    }
+  }, [data, activeSections, previewMode]);
 
   // Memoize rendered sections
   const renderedSections = useMemo(() => {
